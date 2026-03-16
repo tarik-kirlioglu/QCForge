@@ -4,7 +4,7 @@ use crate::parser::types::QcResults;
 pub enum ActiveTab {
     Samtools,
     Bcftools,
-    // Fastqc,   // Phase 3
+    Fastqc,
     // Overview, // Phase 4
 }
 
@@ -13,11 +13,12 @@ impl ActiveTab {
         match self {
             ActiveTab::Samtools => "samtools",
             ActiveTab::Bcftools => "bcftools",
+            ActiveTab::Fastqc => "FastQC",
         }
     }
 
     pub fn all() -> &'static [ActiveTab] {
-        &[ActiveTab::Samtools, ActiveTab::Bcftools]
+        &[ActiveTab::Samtools, ActiveTab::Bcftools, ActiveTab::Fastqc]
     }
 }
 
@@ -31,6 +32,7 @@ pub struct AppState {
     pub qc_results: Option<QcResults>,
     pub samtools_selected: usize,
     pub bcftools_selected: usize,
+    pub fastqc_selected: usize,
     pub scroll_offset: u16,
 }
 
@@ -45,6 +47,7 @@ impl AppState {
             qc_results: None,
             samtools_selected: 0,
             bcftools_selected: 0,
+            fastqc_selected: 0,
             scroll_offset: 0,
         }
     }

@@ -39,6 +39,10 @@ impl AppState {
                             let max = results.bcftools_reports.len().saturating_sub(1);
                             self.bcftools_selected = (self.bcftools_selected + 1).min(max);
                         }
+                        ActiveTab::Fastqc => {
+                            let max = results.fastqc_reports.len().saturating_sub(1);
+                            self.fastqc_selected = (self.fastqc_selected + 1).min(max);
+                        }
                     }
                     self.scroll_offset = 0;
                 }
@@ -50,6 +54,9 @@ impl AppState {
                     }
                     ActiveTab::Bcftools => {
                         self.bcftools_selected = self.bcftools_selected.saturating_sub(1);
+                    }
+                    ActiveTab::Fastqc => {
+                        self.fastqc_selected = self.fastqc_selected.saturating_sub(1);
                     }
                 }
                 self.scroll_offset = 0;

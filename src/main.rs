@@ -114,8 +114,13 @@ async fn load_qc_data(
                 let stats = parser::bcftools::parse_bcftools_stats(&path, &content)?;
                 results.bcftools_reports.push(stats);
             }
-            scanner::DetectedFile::FastqcZip(_path) => {
-                // Phase 3
+            scanner::DetectedFile::FastqcZip(path) => {
+                let report = tokio::task::spawn_blocking(move || {
+                    parser::fastqc::parse_fastqc_zip(&path)
+                })
+                .await
+                .map_err(|e| error::QcForgeError::Terminal(e.to_string()))??;
+                results.fastqc_reports.push(report);
             }
         }
     }

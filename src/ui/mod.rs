@@ -30,6 +30,7 @@ pub fn draw(frame: &mut Frame, state: &AppState) {
     match state.active_tab {
         ActiveTab::Samtools => tabs::samtools::render(frame, app_layout.content, state),
         ActiveTab::Bcftools => tabs::bcftools::render(frame, app_layout.content, state),
+        ActiveTab::Fastqc => tabs::fastqc::render(frame, app_layout.content, state),
     }
 
     // Help overlay

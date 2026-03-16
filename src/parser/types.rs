@@ -187,9 +187,101 @@ pub struct DpEntry {
     pub frac_sites: f64,
 }
 
-// ── FastQC (Phase 3 placeholder) ────────────────────────
+// ── FastQC ──────────────────────────────────────────────
 
 #[derive(Debug, Serialize)]
 pub struct FastqcReport {
     pub source_file: PathBuf,
+    pub sample_name: String,
+    pub basic_statistics: FastqcBasicStats,
+    pub per_base_quality: Vec<PerBaseQuality>,
+    pub per_sequence_quality: Vec<PerSequenceQuality>,
+    pub per_base_gc_content: Vec<PerBaseGc>,
+    pub per_sequence_gc_content: Vec<PerSeqGc>,
+    pub sequence_length_dist: Vec<SeqLengthEntry>,
+    pub overrepresented_sequences: Vec<OverrepresentedSeq>,
+    pub module_statuses: Vec<(String, ModuleStatus)>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub enum ModuleStatus {
+    Pass,
+    Warn,
+    Fail,
+}
+
+impl ModuleStatus {
+    pub fn from_str(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "pass" => ModuleStatus::Pass,
+            "warn" => ModuleStatus::Warn,
+            "fail" => ModuleStatus::Fail,
+            _ => ModuleStatus::Warn,
+        }
+    }
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            ModuleStatus::Pass => "PASS",
+            ModuleStatus::Warn => "WARN",
+            ModuleStatus::Fail => "FAIL",
+        }
+    }
+}
+
+#[derive(Debug, Default, Serialize)]
+pub struct FastqcBasicStats {
+    pub filename: String,
+    pub file_type: String,
+    pub encoding: String,
+    pub total_sequences: u64,
+    pub sequences_flagged_poor_quality: u64,
+    pub sequence_length: String,
+    pub percent_gc: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PerBaseQuality {
+    pub base: String,
+    pub mean: f64,
+    pub median: f64,
+    pub lower_quartile: f64,
+    pub upper_quartile: f64,
+    pub percentile_10: f64,
+    pub percentile_90: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PerSequenceQuality {
+    pub quality: u32,
+    pub count: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PerBaseGc {
+    pub base: String,
+    pub g: f64,
+    pub a: f64,
+    pub t: f64,
+    pub c: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PerSeqGc {
+    pub gc_content: f64,
+    pub count: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SeqLengthEntry {
+    pub length: String,
+    pub count: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct OverrepresentedSeq {
+    pub sequence: String,
+    pub count: u64,
+    pub percentage: f64,
+    pub possible_source: String,
 }
