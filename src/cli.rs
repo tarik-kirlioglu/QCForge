@@ -20,6 +20,14 @@ pub struct Cli {
     /// Export parsed QC data as JSON and exit (no TUI)
     #[arg(long, value_name = "FILE")]
     pub export_json: Option<PathBuf>,
+
+    /// Auto-generate stats from BAM/VCF files using samtools/bcftools
+    #[arg(short, long)]
+    pub generate: bool,
+
+    /// Output directory for generated stats files (default: same as input)
+    #[arg(long, value_name = "DIR")]
+    pub output_dir: Option<PathBuf>,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug)]

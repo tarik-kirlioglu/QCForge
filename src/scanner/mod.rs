@@ -11,6 +11,68 @@ pub enum DetectedFile {
     FastqcZip(PathBuf),
 }
 
+#[derive(Debug)]
+pub enum RawFile {
+    Bam(PathBuf),
+    Vcf(PathBuf),
+}
+
+pub fn scan_raw_files(dir: &Path, max_depth: usize) -> Result<Vec<RawFile>> {
+    if !dir.is_dir() {
+        return Err(QcForgeError::NoFilesFound(dir.display().to_string()));
+    }
+
+    let mut raw_files = Vec::new();
+    walk_dir_raw(dir, max_depth, 0, &mut raw_files)?;
+    Ok(raw_files)
+}
+
+fn walk_dir_raw(
+    dir: &Path,
+    max_depth: usize,
+    current_depth: usize,
+    results: &mut Vec<RawFile>,
+) -> Result<()> {
+    if current_depth > max_depth {
+        return Ok(());
+    }
+
+    let entries = fs::read_dir(dir)?;
+
+    for entry in entries {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_dir() {
+            walk_dir_raw(&path, max_depth, current_depth + 1, results)?;
+        } else if path.is_file() {
+            if let Some(raw) = classify_raw_file(&path) {
+                results.push(raw);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn classify_raw_file(path: &Path) -> Option<RawFile> {
+    let filename = path.file_name()?.to_str()?;
+    let lower = filename.to_lowercase();
+
+    if lower.ends_with(".bam") {
+        return Some(RawFile::Bam(path.to_path_buf()));
+    }
+
+    if lower.ends_with(".vcf")
+        || lower.ends_with(".vcf.gz")
+        || lower.ends_with(".bcf")
+    {
+        return Some(RawFile::Vcf(path.to_path_buf()));
+    }
+
+    None
+}
+
 pub fn scan_directory(dir: &Path, max_depth: usize) -> Result<Vec<DetectedFile>> {
     if !dir.is_dir() {
         return Err(QcForgeError::NoFilesFound(dir.display().to_string()));

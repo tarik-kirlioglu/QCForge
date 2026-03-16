@@ -2,6 +2,7 @@ mod app;
 mod cli;
 mod error;
 mod event;
+mod generator;
 mod parser;
 mod scanner;
 mod ui;
@@ -27,6 +28,19 @@ use parser::types::QcResults;
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    // Generate stats from BAM/VCF if requested
+    if cli.generate {
+        eprintln!("Scanning for BAM/VCF files...");
+        let raw_files = scanner::scan_raw_files(&cli.input_dir, cli.max_depth)?;
+        if raw_files.is_empty() {
+            eprintln!("No BAM/VCF files found in {}", cli.input_dir.display());
+        } else {
+            eprintln!("Found {} BAM/VCF file(s). Generating stats...", raw_files.len());
+            generator::generate_stats(&raw_files, cli.output_dir.as_deref())?;
+            eprintln!("Stats generation complete.\n");
+        }
+    }
 
     // JSON export mode: no TUI, just parse and dump
     if let Some(ref json_path) = cli.export_json {
