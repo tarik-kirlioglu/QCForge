@@ -108,8 +108,11 @@ async fn load_qc_data(
                 let stats = parser::samtools::parse_samtools_stats(&path, &content)?;
                 results.samtools_reports.push(stats);
             }
-            scanner::DetectedFile::BcftoolsStats(_path) => {
-                // Phase 2
+            scanner::DetectedFile::BcftoolsStats(path) => {
+                let content =
+                    tokio::fs::read_to_string(&path).await.map_err(error::QcForgeError::Io)?;
+                let stats = parser::bcftools::parse_bcftools_stats(&path, &content)?;
+                results.bcftools_reports.push(stats);
             }
             scanner::DetectedFile::FastqcZip(_path) => {
                 // Phase 3

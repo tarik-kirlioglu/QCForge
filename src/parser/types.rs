@@ -97,11 +97,94 @@ pub struct GcEntry {
     pub count: u64,
 }
 
-// ── bcftools stats (Phase 2 placeholder) ────────────────
+// ── bcftools stats ──────────────────────────────────────
 
 #[derive(Debug, Serialize)]
 pub struct BcftoolsStats {
     pub source_file: PathBuf,
+    pub summary: BcftoolsSummary,
+    pub tstv: TsTvStats,
+    pub substitution_types: Vec<StEntry>,
+    pub allele_freq: Vec<AfEntry>,
+    pub qual_dist: Vec<QualEntry>,
+    pub indel_dist: Vec<IddEntry>,
+    pub depth_dist: Vec<DpEntry>,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub struct BcftoolsSummary {
+    pub num_samples: u64,
+    pub num_records: u64,
+    pub num_no_alts: u64,
+    pub num_snps: u64,
+    pub num_mnps: u64,
+    pub num_indels: u64,
+    pub num_others: u64,
+    pub num_multiallelic_sites: u64,
+    pub num_multiallelic_snp_sites: u64,
+    pub raw: BTreeMap<String, String>,
+}
+
+impl BcftoolsSummary {
+    pub fn snp_percent(&self) -> f64 {
+        if self.num_records == 0 {
+            return 0.0;
+        }
+        (self.num_snps as f64 / self.num_records as f64) * 100.0
+    }
+
+    pub fn indel_percent(&self) -> f64 {
+        if self.num_records == 0 {
+            return 0.0;
+        }
+        (self.num_indels as f64 / self.num_records as f64) * 100.0
+    }
+}
+
+#[derive(Debug, Default, Serialize)]
+pub struct TsTvStats {
+    pub ts: u64,
+    pub tv: u64,
+    pub ts_tv_ratio: f64,
+    pub ts_first_alt: u64,
+    pub tv_first_alt: u64,
+    pub ts_tv_ratio_first_alt: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct StEntry {
+    pub sub_type: String,
+    pub count: u64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AfEntry {
+    pub allele_freq: f64,
+    pub num_snps: u64,
+    pub num_indels: u64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct QualEntry {
+    pub quality: f64,
+    pub num_snps: u64,
+    pub num_indels: u64,
+    pub num_tstv: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct IddEntry {
+    pub length: i32,
+    pub count: u64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DpEntry {
+    pub bin: u32,
+    pub num_genotypes: u64,
+    pub frac_genotypes: f64,
+    pub num_sites: u64,
+    pub frac_sites: f64,
 }
 
 // ── FastQC (Phase 3 placeholder) ────────────────────────

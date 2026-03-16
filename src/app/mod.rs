@@ -30,13 +30,28 @@ impl AppState {
             }
             Action::NextFile => {
                 if let Some(ref results) = self.qc_results {
-                    let max = results.samtools_reports.len().saturating_sub(1);
-                    self.samtools_selected = (self.samtools_selected + 1).min(max);
+                    match self.active_tab {
+                        ActiveTab::Samtools => {
+                            let max = results.samtools_reports.len().saturating_sub(1);
+                            self.samtools_selected = (self.samtools_selected + 1).min(max);
+                        }
+                        ActiveTab::Bcftools => {
+                            let max = results.bcftools_reports.len().saturating_sub(1);
+                            self.bcftools_selected = (self.bcftools_selected + 1).min(max);
+                        }
+                    }
                     self.scroll_offset = 0;
                 }
             }
             Action::PrevFile => {
-                self.samtools_selected = self.samtools_selected.saturating_sub(1);
+                match self.active_tab {
+                    ActiveTab::Samtools => {
+                        self.samtools_selected = self.samtools_selected.saturating_sub(1);
+                    }
+                    ActiveTab::Bcftools => {
+                        self.bcftools_selected = self.bcftools_selected.saturating_sub(1);
+                    }
+                }
                 self.scroll_offset = 0;
             }
             Action::ToggleHelp => {

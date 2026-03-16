@@ -1,0 +1,50 @@
+# This file was produced by bcftools stats (1.17+htslib-1.17)
+# The command line was: bcftools stats input.vcf.gz
+# SN, Summary numbers:
+SN	0	number of samples:	1
+SN	0	number of records:	8500
+SN	0	number of no-ALTs:	0
+SN	0	number of SNPs:	7200
+SN	0	number of MNPs:	0
+SN	0	number of indels:	1250
+SN	0	number of others:	50
+SN	0	number of multiallelic sites:	320
+SN	0	number of multiallelic SNP sites:	180
+# TSTV, transitions/transversions:
+TSTV	0	4800	2400	2.00	4600	2300	2.00
+# ST, Substitution types:
+ST	0	A>C	380
+ST	0	A>G	1200
+ST	0	A>T	290
+ST	0	C>A	410
+ST	0	C>G	350
+ST	0	C>T	1850
+ST	0	G>A	1800
+ST	0	G>C	340
+ST	0	G>T	400
+ST	0	T>A	280
+ST	0	T>C	1180
+ST	0	T>G	370
+# AF, Allele frequency:
+AF	0	0.100000	1200	250
+AF	0	0.200000	800	180
+AF	0	0.300000	500	120
+AF	0	0.500000	2500	350
+AF	0	1.000000	300	30
+# IDD, InDel distribution:
+IDD	0	-5	45
+IDD	0	-4	60
+IDD	0	-3	85
+IDD	0	-2	120
+IDD	0	-1	280
+IDD	0	1	310
+IDD	0	2	130
+IDD	0	3	75
+IDD	0	4	50
+IDD	0	5	35
+# DP, Depth distribution:
+DP	0	0	50	0.59	50	0.59
+DP	0	10	800	9.41	800	9.41
+DP	0	20	2200	25.88	2200	25.88
+DP	0	30	1200	14.12	1200	14.12
+DP	0	50	50	0.59	50	0.59
