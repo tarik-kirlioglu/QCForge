@@ -1,0 +1,93 @@
+# This file was produced by samtools stats (1.17+htslib-1.17) and target_regions.bed
+# The command line was: samtools stats -t target_regions.bed input.bam
+# CHK, Checksum	[2]Read Names	[3]Sequences	[4]Qualities
+# CHK, CRC32 of count of each type of base (similar to determine)
+CHK	12345678	87654321	11223344
+# Summary Numbers. Use `grep ^SN | cut -f 2-` to extract this part.
+SN	raw total sequences:	142038508	# excludes supplementary and secondary reads
+SN	filtered sequences:	0
+SN	sequences:	142038508
+SN	is sorted:	1
+SN	1st fragments:	71019254
+SN	last fragments:	71019254
+SN	reads mapped:	139476531
+SN	reads mapped and paired:	138200100
+SN	reads unmapped:	2561977
+SN	reads properly paired:	136500000
+SN	reads paired:	142038508
+SN	reads duplicated:	17490928
+SN	reads MQ0:	5230000
+SN	reads QC failed:	12500
+SN	non-primary alignments:	3200000
+SN	supplementary alignments:	1500000
+SN	total length:	21447814708
+SN	total first fragment length:	10723907354
+SN	total last fragment length:	10723907354
+SN	bases mapped:	21071493181
+SN	bases mapped (cigar):	20800000000
+SN	bases trimmed:	0
+SN	bases duplicated:	2641129528
+SN	mismatches:	41600000
+SN	error rate:	0.002
+SN	average length:	151
+SN	average first fragment length:	151
+SN	average last fragment length:	151
+SN	maximum length:	151
+SN	maximum first fragment length:	151
+SN	maximum last fragment length:	151
+SN	average quality:	36.2
+SN	insert size average:	250.5
+SN	insert size standard deviation:	62.3
+SN	inward oriented pairs:	69100050
+SN	outward oriented pairs:	25000
+SN	pairs with other orientation:	12000
+SN	pairs on different chromosomes:	187500
+SN	percentage of properly paired reads (%):	96.1
+# Coverage distribution
+COV	[0-0]	0	15230000
+COV	[1-1]	1	8920000
+COV	[2-2]	2	7450000
+COV	[3-4]	3	12300000
+COV	[5-7]	5	18500000
+COV	[8-10]	8	22100000
+COV	[11-15]	11	28900000
+COV	[16-20]	16	19200000
+COV	[21-30]	21	14500000
+COV	[31-40]	31	8200000
+COV	[41-50]	41	3800000
+COV	[51-100]	51	2100000
+# Insert Size distribution
+IS	150	2500	2400	50	50
+IS	175	4200	4100	50	50
+IS	200	8500	8300	100	100
+IS	225	15000	14700	150	150
+IS	250	22000	21600	200	200
+IS	275	18000	17700	150	150
+IS	300	12000	11800	100	100
+IS	325	7500	7300	100	100
+IS	350	4000	3900	50	50
+IS	375	2000	1950	25	25
+IS	400	1000	980	10	10
+# Read Length distribution
+RL	151	139476531
+RL	100	2561977
+# GC Content of first fragments
+GCF	10.00	150000
+GCF	20.00	1200000
+GCF	30.00	5800000
+GCF	40.00	22000000
+GCF	50.00	28500000
+GCF	60.00	10200000
+GCF	70.00	2800000
+GCF	80.00	350000
+GCF	90.00	19254
+# GC Content of last fragments
+GCL	10.00	145000
+GCL	20.00	1180000
+GCL	30.00	5700000
+GCL	40.00	21800000
+GCL	50.00	28700000
+GCL	60.00	10400000
+GCL	70.00	2750000
+GCL	80.00	330000
+GCL	90.00	14254
