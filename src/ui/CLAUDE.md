@@ -1,49 +1,62 @@
 # UI Module
 
-ratatui ile terminal render katmanı.
+ratatui ile terminal render katmanı. 4 tab, help overlay, loading/error state'leri.
 
 ## Yapı
 
 ```
 ui/
-├── mod.rs        # Root render fn: draw(frame, app_state)
+├── mod.rs        # Root render fn: draw(frame, app_state) + loading/error/help overlay
 ├── layout.rs     # Header, tab bar, content area, footer layout bölümleri
-├── tabs/         # Her tab için ayrı render modülü
-│   ├── overview.rs   # Tüm QC verilerinin özet dashboard'u
-│   ├── samtools.rs   # samtools stats detay görünümü
-│   ├── bcftools.rs   # bcftools stats detay görünümü
-│   └── fastqc.rs     # FastQC detay görünümü
-└── widgets/      # Tekrar kullanılabilir widget wrapper'ları
-    ├── gauge.rs  # Yüzdelik gauge (mapping %, dup %)
-    ├── chart.rs  # Line/bar chart wrappers
-    └── table.rs  # Styled table helpers
+├── tabs/
+│   ├── overview.rs   # Tüm QC verilerinin özet dashboard'u (dosya listesi, aggregate stats, gauge'lar)
+│   ├── samtools.rs   # samtools stats detay: summary table + mapping/dup/paired gauge'ları
+│   ├── bcftools.rs   # bcftools stats detay: summary + Ts/Tv + substitution types + indel distribution
+│   └── fastqc.rs     # FastQC detay: basic stats + module status (pass/warn/fail) + per-base quality chart
+└── widgets/
+    ├── gauge.rs  # Quality renk hesaplama (mapping_style, duplication_style)
+    └── table.rs  # Styled table helpers (header_style, highlight_style)
 ```
+
+## Tabs
+
+| Tab | İçerik |
+|-----|--------|
+| Overview | Dosya sayıları, aggregate stats, avg mapping/dup gauge, tüm dosyaların listesi |
+| samtools | Summary Numbers tablosu + Mapping/Duplication/Properly Paired gauge'ları |
+| bcftools | Summary + Ts/Tv + Substitution Types (inline bar, Ts=cyan Tv=magenta) + InDel Distribution (del=red ins=green) |
+| FastQC | Basic Statistics + Module Status (renkli PASS/WARN/FAIL) + Per Base Quality (bar chart) |
 
 ## Renk Şeması
 
 | Durum | Renk | Kullanım |
 |-------|------|----------|
-| PASS / İyi | Green | mapping > 90%, Q >= 28 |
-| WARN / Marjinal | Yellow | mapping 80-90%, Q 20-28 |
-| FAIL / Kötü | Red | mapping < 80%, Q < 20 |
+| PASS / İyi | Green | mapping > 90%, Q >= 28, dup <= 10% |
+| WARN / Marjinal | Yellow | mapping 80-90%, Q 20-28, dup 10-20% |
+| FAIL / Kötü | Red | mapping < 80%, Q < 20, dup > 20% |
 | Header/Border | Cyan | Çerçeve ve başlıklar |
+| Transitions | Cyan | bcftools substitution types (A>G, G>A, C>T, T>C) |
+| Transversions | Magenta | bcftools substitution types (diğerleri) |
+| Insertions | Green | bcftools indel dist (pozitif length) |
+| Deletions | Red | bcftools indel dist (negatif length) |
 | Normal text | White | Veri gösterimi |
-| Secondary | Gray | Yorum, açıklama |
+| Secondary | Gray / DarkGray | Yorum, açıklama, ikincil bilgi |
 
 ## Layout Kuralları
 
 - ratatui immediate mode: her frame'de UI tamamen yeniden çizilir
 - State UI fonksiyonlarına `&AppState` referansı ile geçirilir, UI fonksiyonları state'i değiştirmez
 - Layout `ratatui::layout::Layout` ile constraint-based yapılır
-- Tab bar'da aktif tab highlight edilir (reverse style)
-- Footer'da context-sensitive keybinding bilgileri gösterilir
-- Terminal boyutu değiştiğinde otomatik re-layout (Resize event ile)
+- Tab bar'da aktif tab highlight edilir (underlined + bold + cyan)
+- Footer'da keybinding bilgileri gösterilir
+- Her tab'da dosya header'ı: `tool: filename [n/total] n:Next p:Prev`
+- Help overlay `?` tuşuyla toggle, centered_rect ile ortaya yerleşir
 
-## Widget Kullanımı
+## Keybindings
 
-- `Gauge`: Yüzdelik değerler için (mapping rate, duplication rate)
-- `Table`: Key-value summary verileri için (SN section)
-- `BarChart`: Dağılım verileri için (insert size, indel length)
-- `Chart` + `Dataset`: Line chart (coverage, GC content, quality scores)
-- `Paragraph`: Metin bilgileri, help overlay
-- `Tabs`: Üst tab bar widget'ı
+- `q` / `Esc`: Quit
+- `←` / `→` / `Tab`: Tab değiştir
+- `j` / `k` / `↑` / `↓`: Scroll
+- `n` / `p`: Dosyalar arası geçiş
+- `Ctrl+C`: Quit
+- `?`: Help overlay toggle
