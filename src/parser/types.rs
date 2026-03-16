@@ -180,7 +180,7 @@ pub struct IddEntry {
 
 #[derive(Debug, Serialize)]
 pub struct DpEntry {
-    pub bin: u32,
+    pub bin: String,
     pub num_genotypes: u64,
     pub frac_genotypes: f64,
     pub num_sites: u64,

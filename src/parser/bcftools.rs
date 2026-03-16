@@ -77,7 +77,7 @@ pub fn parse_bcftools_stats(path: &Path, content: &str) -> Result<BcftoolsStats>
             "DP" if fields.len() >= 7 => {
                 // DP\tid\tbin\tnum_genotypes\tfrac_genotypes\tnum_sites\tfrac_sites
                 depth_dist.push(DpEntry {
-                    bin: parse_num(path, "DP.bin", fields[2])?,
+                    bin: fields[2].trim().to_string(),
                     num_genotypes: parse_num(path, "DP.num_gt", fields[3])?,
                     frac_genotypes: parse_num(path, "DP.frac_gt", fields[4])?,
                     num_sites: parse_num(path, "DP.num_sites", fields[5])?,
@@ -285,7 +285,7 @@ DP\t0\t50\t50\t0.59\t50\t0.59";
         let result = parse_bcftools_stats(&path, SAMPLE_BCFTOOLS).unwrap();
 
         assert_eq!(result.depth_dist.len(), 10);
-        assert_eq!(result.depth_dist[4].bin, 20);
+        assert_eq!(result.depth_dist[4].bin, "20");
         assert_eq!(result.depth_dist[4].num_genotypes, 2200);
     }
 
