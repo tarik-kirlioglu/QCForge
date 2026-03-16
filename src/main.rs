@@ -28,6 +28,16 @@ use parser::types::QcResults;
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    // JSON export mode: no TUI, just parse and dump
+    if let Some(ref json_path) = cli.export_json {
+        let results = load_qc_data(&cli.input_dir, cli.max_depth).await?;
+        let json = serde_json::to_string_pretty(&results)
+            .map_err(|e| error::QcForgeError::Terminal(e.to_string()))?;
+        std::fs::write(json_path, json)?;
+        eprintln!("QC data exported to {}", json_path.display());
+        return Ok(());
+    }
+
     // Install panic hook to restore terminal
     let original_hook = panic::take_hook();
     panic::set_hook(Box::new(move |panic_info| {

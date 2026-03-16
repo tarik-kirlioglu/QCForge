@@ -5,12 +5,13 @@ pub enum ActiveTab {
     Samtools,
     Bcftools,
     Fastqc,
-    // Overview, // Phase 4
+    Overview,
 }
 
 impl ActiveTab {
     pub fn title(&self) -> &'static str {
         match self {
+            ActiveTab::Overview => "Overview",
             ActiveTab::Samtools => "samtools",
             ActiveTab::Bcftools => "bcftools",
             ActiveTab::Fastqc => "FastQC",
@@ -18,7 +19,12 @@ impl ActiveTab {
     }
 
     pub fn all() -> &'static [ActiveTab] {
-        &[ActiveTab::Samtools, ActiveTab::Bcftools, ActiveTab::Fastqc]
+        &[
+            ActiveTab::Overview,
+            ActiveTab::Samtools,
+            ActiveTab::Bcftools,
+            ActiveTab::Fastqc,
+        ]
     }
 }
 
@@ -39,7 +45,7 @@ pub struct AppState {
 impl AppState {
     pub fn new() -> Self {
         Self {
-            active_tab: ActiveTab::Samtools,
+            active_tab: ActiveTab::Overview,
             should_quit: false,
             show_help: false,
             loading: true,

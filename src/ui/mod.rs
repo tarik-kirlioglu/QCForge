@@ -28,6 +28,7 @@ pub fn draw(frame: &mut Frame, state: &AppState) {
 
     // Tab content
     match state.active_tab {
+        ActiveTab::Overview => tabs::overview::render(frame, app_layout.content, state),
         ActiveTab::Samtools => tabs::samtools::render(frame, app_layout.content, state),
         ActiveTab::Bcftools => tabs::bcftools::render(frame, app_layout.content, state),
         ActiveTab::Fastqc => tabs::fastqc::render(frame, app_layout.content, state),
