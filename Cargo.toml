@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 description = "A TUI bioinformatics QC dashboard for FastQC, samtools, and bcftools"
 license = "MIT"
+repository = "https://github.com/tarik-kirlioglu/QCForge"
+homepage = "https://github.com/tarik-kirlioglu/QCForge"
+authors = ["Tarık Kırlıoğlu"]
+rust-version = "1.78"
 
 [dependencies]
 ratatui = "0.30"

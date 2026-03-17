@@ -20,13 +20,18 @@ Built with Rust using [ratatui](https://github.com/ratatui/ratatui) + [crossterm
 ```bash
 git clone https://github.com/tarik-kirlioglu/QCForge.git
 cd QCForge
-cargo build --release
-# Binary at target/release/qcforge
+cargo install --path .
+```
+
+This installs the `qcforge` binary to `~/.cargo/bin/`. Make sure it's in your PATH:
+
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
 ```
 
 ### Requirements
 
-- Rust 1.70+
+- Rust 1.78+
 - For `--generate` flag: `samtools` and/or `bcftools` in PATH
 
 ## Usage
@@ -120,4 +125,4 @@ src/
 
 ## License
 
-MIT
+[MIT](LICENSE)
