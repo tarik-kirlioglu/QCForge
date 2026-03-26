@@ -29,11 +29,13 @@ pub fn generate_stats(
     let mut generated = Vec::new();
     let mut need_samtools = false;
     let mut need_bcftools = false;
+    let mut need_fastqc = false;
 
     for f in raw_files {
         match f {
             RawFile::Bam(_) => need_samtools = true,
             RawFile::Vcf(_) => need_bcftools = true,
+            RawFile::Fastq(_) => need_fastqc = true,
         }
     }
 
@@ -42,6 +44,9 @@ pub fn generate_stats(
     }
     if need_bcftools {
         check_tool("bcftools")?;
+    }
+    if need_fastqc {
+        check_tool("fastqc")?;
     }
 
     for raw_file in raw_files {
@@ -102,6 +107,38 @@ pub fn generate_stats(
                 eprintln!("  [done] {}", stats_path.display());
                 generated.push(stats_path);
             }
+            RawFile::Fastq(fq_path) => {
+                let zip_path = make_output_path(fq_path, "_fastqc.zip", output_dir);
+                if zip_path.exists() {
+                    eprintln!("  [skip] {} (already exists)", zip_path.display());
+                    generated.push(zip_path);
+                    continue;
+                }
+
+                let out_dir = output_dir
+                    .unwrap_or_else(|| fq_path.parent().unwrap_or(Path::new(".")));
+
+                eprintln!("  [run]  fastqc {} ...", fq_path.display());
+                let output = Command::new("fastqc")
+                    .arg(fq_path)
+                    .arg("--outdir")
+                    .arg(out_dir)
+                    .arg("--quiet")
+                    .output()
+                    .map_err(|e| QcForgeError::Terminal(format!("fastqc failed: {}", e)))?;
+
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    return Err(QcForgeError::Terminal(format!(
+                        "fastqc failed for {}: {}",
+                        fq_path.display(),
+                        stderr.trim()
+                    )));
+                }
+
+                eprintln!("  [done] {}", zip_path.display());
+                generated.push(zip_path);
+            }
         }
     }
 
@@ -119,6 +156,10 @@ fn make_output_path(input: &Path, suffix: &str, output_dir: Option<&Path>) -> Pa
                 .or_else(|| name.strip_suffix(".vcf.gz"))
                 .or_else(|| name.strip_suffix(".vcf"))
                 .or_else(|| name.strip_suffix(".bcf"))
+                .or_else(|| name.strip_suffix(".fastq.gz"))
+                .or_else(|| name.strip_suffix(".fastq"))
+                .or_else(|| name.strip_suffix(".fq.gz"))
+                .or_else(|| name.strip_suffix(".fq"))
                 .unwrap_or(&name);
             clean.to_string()
         })

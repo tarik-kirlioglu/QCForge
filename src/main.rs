@@ -31,12 +31,12 @@ async fn main() -> Result<()> {
 
     // Generate stats from BAM/VCF if requested
     if cli.generate {
-        eprintln!("Scanning for BAM/VCF files...");
+        eprintln!("Scanning for BAM/VCF/FASTQ files...");
         let raw_files = scanner::scan_raw_files(&cli.input_dir, cli.max_depth)?;
         if raw_files.is_empty() {
-            eprintln!("No BAM/VCF files found in {}", cli.input_dir.display());
+            eprintln!("No BAM/VCF/FASTQ files found in {}", cli.input_dir.display());
         } else {
-            eprintln!("Found {} BAM/VCF file(s). Generating stats...", raw_files.len());
+            eprintln!("Found {} BAM/VCF/FASTQ file(s). Generating stats...", raw_files.len());
             generator::generate_stats(&raw_files, cli.output_dir.as_deref())?;
             eprintln!("Stats generation complete.\n");
         }

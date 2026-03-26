@@ -15,6 +15,7 @@ pub enum DetectedFile {
 pub enum RawFile {
     Bam(PathBuf),
     Vcf(PathBuf),
+    Fastq(PathBuf),
 }
 
 pub fn scan_raw_files(dir: &Path, max_depth: usize) -> Result<Vec<RawFile>> {
@@ -68,6 +69,14 @@ fn classify_raw_file(path: &Path) -> Option<RawFile> {
         || lower.ends_with(".bcf")
     {
         return Some(RawFile::Vcf(path.to_path_buf()));
+    }
+
+    if lower.ends_with(".fastq.gz")
+        || lower.ends_with(".fastq")
+        || lower.ends_with(".fq.gz")
+        || lower.ends_with(".fq")
+    {
+        return Some(RawFile::Fastq(path.to_path_buf()));
     }
 
     None
