@@ -1,6 +1,6 @@
 # QCForge
 
-Biyoinformatik QC dashboard TUI uygulaması. FastQC, samtools stats ve bcftools stats çıktılarını parse edip terminal üzerinde interaktif görselleştirme sunar. BAM/VCF dosyalarından otomatik stats üretme desteği vardır.
+Biyoinformatik QC dashboard TUI uygulaması. FastQC, samtools stats ve bcftools stats çıktılarını parse edip terminal üzerinde interaktif görselleştirme sunar. BAM/VCF dosyalarından otomatik stats üretme ve FASTQ dosyalarından FastQC çalıştırma desteği vardır.
 
 ## Tech Stack
 
@@ -20,7 +20,7 @@ Biyoinformatik QC dashboard TUI uygulaması. FastQC, samtools stats ve bcftools 
 cargo build                          # Derleme
 cargo run -- <DIR>                   # TUI başlat (dizin tarayarak)
 cargo run -- .                       # Mevcut dizini tara
-cargo run -- -g <DIR>                # BAM/VCF'ten stats üret + TUI
+cargo run -- -g <DIR>                # BAM/VCF/FASTQ'dan stats üret + TUI
 cargo run -- --generate <DIR>        # Uzun form
 cargo run -- -g --output-dir ./out/ <DIR>  # Stats'ları farklı dizine yaz
 cargo run -- --export-json qc.json <DIR>   # JSON export (TUI'sız)
@@ -39,9 +39,9 @@ src/
 ├── error.rs       # QcForgeError enum (thiserror)
 ├── app/           # Uygulama state machine (Action pattern)
 ├── event/         # crossterm event handling (async EventStream)
-├── generator/     # BAM/VCF → stats dosyası üretimi (samtools/bcftools çalıştırma)
+├── generator/     # BAM/VCF/FASTQ → stats dosyası üretimi (samtools/bcftools/fastqc çalıştırma)
 ├── parser/        # Dosya parser'ları (samtools, bcftools, fastqc)
-├── scanner/       # Dizin tarama, dosya tipi tespiti (stats + BAM/VCF)
+├── scanner/       # Dizin tarama, dosya tipi tespiti (stats + BAM/VCF/FASTQ)
 └── ui/            # ratatui render katmanı (4 tab + widgets)
     ├── tabs/      # Overview, samtools, bcftools, FastQC
     └── widgets/   # gauge, table helpers
@@ -52,7 +52,7 @@ src/
 | Flag | Kısa | Açıklama |
 |------|------|----------|
 | `<DIR>` | | Taranacak dizin (default: `.`) |
-| `--generate` | `-g` | BAM/VCF bulunca otomatik samtools/bcftools stats çalıştır |
+| `--generate` | `-g` | BAM/VCF/FASTQ bulunca otomatik samtools/bcftools/fastqc çalıştır |
 | `--output-dir` | | Generate edilen stats dosyalarının yazılacağı dizin |
 | `--export-json` | | JSON export (TUI açılmaz) |
 | `--filter` | `-f` | Sadece belirli araç göster (samtools/bcftools/fastqc) |
@@ -76,5 +76,6 @@ src/
 - `##FastQC` header satırı `>>` ile başlamaz, `#` ile başlar — section parser'da dikkat.
 - ratatui her frame'de tüm UI'ı yeniden çizer (immediate mode). State'i UI'dan ayır.
 - crossterm event-stream feature'ı futures StreamExt gerektirir.
-- `--generate` modu stats dosyası zaten varsa skip eder (idempotent).
-- Generator, samtools/bcftools'un PATH'de olup olmadığını kontrol eder.
+- `--generate` modu stats dosyası / `_fastqc.zip` zaten varsa skip eder (idempotent).
+- Generator, samtools/bcftools/fastqc'nin PATH'de olup olmadığını kontrol eder.
+- FastQC çıktı isimlendirmesi: `sample.fastq.gz` → `sample_fastqc.zip`. FastQC kendi disk'e yazar, stdout capture gerekmez.

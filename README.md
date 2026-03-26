@@ -7,7 +7,7 @@ Built with Rust using [ratatui](https://github.com/ratatui/ratatui) + [crossterm
 ## Features
 
 - **Auto-detection** — Scans directories recursively and automatically identifies QC output files
-- **Auto-generation** — Runs `samtools stats` and `bcftools stats` directly from BAM/VCF files (`--generate`)
+- **Auto-generation** — Runs `samtools stats`, `bcftools stats`, and `fastqc` directly from BAM/VCF/FASTQ files (`--generate`)
 - **4 interactive tabs** — Overview dashboard, samtools stats, bcftools stats, FastQC
 - **Visual metrics** — Gauges for mapping/duplication rates, inline bar charts for substitution types and indel distributions, colored PASS/WARN/FAIL indicators
 - **JSON export** — Export all parsed QC data as JSON for downstream analysis (`--export-json`)
@@ -32,7 +32,7 @@ export PATH="$HOME/.cargo/bin:$PATH"
 ### Requirements
 
 - Rust 1.78+
-- For `--generate` flag: `samtools` and/or `bcftools` in PATH
+- For `--generate` flag: `samtools`, `bcftools`, and/or `fastqc` in PATH (only needed tools are checked)
 
 ## Usage
 
@@ -40,8 +40,8 @@ export PATH="$HOME/.cargo/bin:$PATH"
 # Scan a directory for existing QC outputs and launch TUI
 qcforge /path/to/qc_outputs/
 
-# Auto-generate stats from BAM/VCF files, then launch TUI
-qcforge --generate /path/to/bam_vcf_dir/
+# Auto-generate stats from BAM/VCF/FASTQ files, then launch TUI
+qcforge --generate /path/to/data_dir/
 
 # Generate stats to a specific output directory
 qcforge --generate --output-dir ./stats/ /path/to/data/
@@ -62,6 +62,7 @@ qcforge --generate --export-json results.json /path/to/data/
 | FastQC zip | Filename matches `*_fastqc.zip` |
 | BAM files (`--generate`) | Extension `.bam` |
 | VCF files (`--generate`) | Extension `.vcf`, `.vcf.gz`, `.bcf` |
+| FASTQ files (`--generate`) | Extension `.fastq`, `.fastq.gz`, `.fq`, `.fq.gz` |
 
 ### CLI Options
 
@@ -72,7 +73,7 @@ Arguments:
   [DIR]  Directory to scan for QC output files [default: .]
 
 Options:
-  -g, --generate           Auto-generate stats from BAM/VCF files
+  -g, --generate           Auto-generate stats from BAM/VCF/FASTQ files
       --output-dir <DIR>   Output directory for generated stats files
       --export-json <FILE> Export parsed QC data as JSON and exit
   -f, --filter <FILTER>    Only show results for a specific tool [samtools|bcftools|fastqc]
@@ -115,7 +116,7 @@ src/
 ├── error.rs        # Custom error types (thiserror)
 ├── app/            # State machine (Action pattern)
 ├── event/          # Async event handling (crossterm EventStream)
-├── generator/      # BAM/VCF → stats generation (subprocess)
+├── generator/      # BAM/VCF/FASTQ → stats generation (subprocess)
 ├── parser/         # File parsers (samtools, bcftools, FastQC)
 ├── scanner/        # Directory scanning and file type detection
 └── ui/             # TUI rendering (ratatui)
