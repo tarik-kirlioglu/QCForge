@@ -1,104 +1,105 @@
 # QCForge
 
-Biyoinformatik QC dashboard TUI uygulaması. FastQC, samtools stats ve bcftools stats çıktılarını parse edip terminal üzerinde interaktif görselleştirme sunar. BAM/VCF dosyalarından otomatik stats üretme ve FASTQ dosyalarından FastQC çalıştırma desteği vardır.
+Bioinformatics QC dashboard TUI application. Parses FastQC, samtools stats, and bcftools stats outputs and provides interactive visualization in the terminal. Supports automatic stats generation from BAM/VCF files and running FastQC on FASTQ files.
 
 ## Tech Stack
 
-- **Dil:** Rust (edition 2021)
+- **Language:** Rust (edition 2021)
 - **TUI:** ratatui 0.30 + crossterm 0.29 (event-stream feature)
 - **Async:** tokio (full features)
-- **Error handling:** thiserror (custom error types, anyhow kullanılmaz)
+- **Error handling:** thiserror (custom error types, anyhow is not used)
 - **CLI:** clap 4.5 (derive feature)
 - **FastQC zip:** zip 8.2
-- **Serialization:** serde + serde_json (JSON export için)
-- **CSV export:** csv 1.3 (CSV/TSV export için)
-- **Config:** toml 0.8 (threshold config dosyaları için)
+- **Serialization:** serde + serde_json (for JSON export)
+- **CSV export:** csv 1.3 (for CSV/TSV export)
+- **Config:** toml 0.8 (for threshold config files)
 - **File discovery:** glob
-- **Stream:** futures (crossterm EventStream için)
+- **Stream:** futures (for crossterm EventStream)
 
-## Komutlar
+## Commands
 
 ```bash
-cargo build                          # Derleme
-cargo run -- <DIR>                   # TUI başlat (dizin tarayarak)
-cargo run -- .                       # Mevcut dizini tara
-cargo run -- -g <DIR>                # BAM/VCF/FASTQ'dan stats üret + TUI
-cargo run -- --generate <DIR>        # Uzun form
-cargo run -- -g --output-dir ./out/ <DIR>  # Stats'ları farklı dizine yaz
-cargo run -- --export-json qc.json <DIR>   # JSON export (TUI'sız)
-cargo run -- --export-csv qc.csv <DIR>     # CSV export (TUI'sız)
-cargo run -- --export-csv qc.tsv <DIR>     # TSV export (.tsv uzantısı tab-delimited)
-cargo run -- --export-json qc.json --export-csv qc.csv <DIR>  # Her ikisi birden
+cargo build                          # Build
+cargo run -- <DIR>                   # Launch TUI (scanning directory)
+cargo run -- .                       # Scan current directory
+cargo run -- -g <DIR>                # Generate stats from BAM/VCF/FASTQ + TUI
+cargo run -- --generate <DIR>        # Long form
+cargo run -- -g --output-dir ./out/ <DIR>  # Write stats to a different directory
+cargo run -- --export-json qc.json <DIR>   # JSON export (no TUI)
+cargo run -- --export-csv qc.csv <DIR>     # CSV export (no TUI)
+cargo run -- --export-csv qc.tsv <DIR>     # TSV export (.tsv extension = tab-delimited)
+cargo run -- --export-json qc.json --export-csv qc.csv <DIR>  # Both at once
 cargo run -- -g --export-json qc.json <DIR> # Generate + JSON export
 cargo run -- --thresholds custom.toml <DIR>  # Custom threshold config
 cargo run -- --strict --export-csv out.csv <DIR>  # Strict mode (exit 1 on FAIL)
-cargo test                           # Tüm testleri çalıştır (36 test)
-cargo clippy                         # Lint kontrolü
-cargo fmt                            # Kod formatlama
+cargo test                           # Run all tests (36 tests)
+cargo clippy                         # Lint check
+cargo fmt                            # Code formatting
 ```
 
-## Mimari
+## Architecture
 
 ```
 src/
 ├── main.rs        # Entry point, terminal setup/restore, tokio runtime
-├── cli.rs         # clap derive ile CLI argümanları
+├── cli.rs         # CLI arguments via clap derive
 ├── error.rs       # QcForgeError enum (thiserror)
 ├── export.rs      # CSV/TSV export (QcRow flat struct, serde serialize, threshold-aware qc_status)
 ├── threshold.rs   # QC threshold engine (MetricThreshold, ThresholdConfig, TOML config)
-├── app/           # Uygulama state machine (Action pattern)
+├── app/           # Application state machine (Action pattern)
 ├── event/         # crossterm event handling (async EventStream, Arc<AtomicBool> search state)
-├── generator/     # BAM/VCF/FASTQ → stats dosyası üretimi (samtools/bcftools/fastqc çalıştırma)
-├── parser/        # Dosya parser'ları (samtools, bcftools, fastqc)
-├── scanner/       # Dizin tarama, dosya tipi tespiti (stats + BAM/VCF/FASTQ)
-└── ui/            # ratatui render katmanı (5 tab + widgets)
+├── generator/     # BAM/VCF/FASTQ → stats file generation (runs samtools/bcftools/fastqc)
+├── parser/        # File parsers (samtools, bcftools, fastqc)
+├── scanner/       # Directory scanning, file type detection (stats + BAM/VCF/FASTQ)
+└── ui/            # ratatui render layer (5 tabs + widgets)
     ├── tabs/      # Summary (threshold-colored), Overview (sortable + filterable), samtools, bcftools, FastQC
     └── widgets/   # gauge, table helpers
 ```
 
 ## CLI Flags
 
-| Flag | Kısa | Açıklama |
-|------|------|----------|
-| `<DIR>` | | Taranacak dizin (default: `.`) |
-| `--generate` | `-g` | BAM/VCF/FASTQ bulunca otomatik samtools/bcftools/fastqc çalıştır |
-| `--output-dir` | | Generate edilen stats dosyalarının yazılacağı dizin |
-| `--export-json` | | JSON export (TUI açılmaz) |
-| `--export-csv` | | CSV/TSV export (TUI açılmaz, .tsv uzantısı tab-delimited) |
-| `--thresholds` | | QC threshold config dosyası (TOML format, default: built-in eşikler) |
-| `--strict` | | FAIL varsa exit code 1 ile çık (CI/CD entegrasyonu için) |
-| `--filter` | `-f` | Sadece belirli araç göster (samtools/bcftools/fastqc) |
-| `--max-depth` | | Recursive tarama derinliği (default: 5) |
+| Flag | Short | Description |
+|------|-------|-------------|
+| `<DIR>` | | Directory to scan (default: `.`) |
+| `--generate` | `-g` | Auto-run samtools/bcftools/fastqc when BAM/VCF/FASTQ files are found |
+| `--output-dir` | | Output directory for generated stats files |
+| `--export-json` | | JSON export (TUI does not open) |
+| `--export-csv` | | CSV/TSV export (TUI does not open, .tsv extension = tab-delimited) |
+| `--thresholds` | | QC threshold config file (TOML format, default: built-in thresholds) |
+| `--strict` | | Exit with code 1 if any FAIL (for CI/CD integration) |
+| `--filter` | `-f` | Show only a specific tool (samtools/bcftools/fastqc) |
+| `--max-depth` | | Recursive scan depth (default: 5) |
 
-## Kod Kuralları
+## Code Rules
 
-- **Error handling:** Tüm hatalar `QcForgeError` enum'u üzerinden. `unwrap()` veya `expect()` sadece test kodunda kullanılabilir. Production kodda `?` operatörü ile propagation.
-- **Naming:** Rust standart snake_case. Struct isimleri PascalCase. Module isimleri snake_case.
-- **Imports:** `use crate::` ile internal imports. Wildcard import (`use x::*`) yasak, açık import kullanılmalı.
-- **Clippy:** `cargo clippy` warning'siz geçmeli. `#[allow(...)]` sadece gerekçe yorumuyla.
-- **Tests:** Her parser modülü kendi unit test'lerini içermeli (`#[cfg(test)] mod tests`). Test verileri inline string ile. Şu an 36 test mevcut (18 parser + 4 export + 11 threshold + 3 summary).
-- **Async:** Dosya I/O tokio::spawn ile arka planda. FastQC zip işlemi spawn_blocking ile. TUI event loop hiçbir zaman bloklanmamalı.
-- **Terminal restore:** Panic durumunda bile terminal state restore edilmeli (panic hook kullan).
+- **Error handling:** All errors go through the `QcForgeError` enum. `unwrap()` or `expect()` may only be used in test code. Production code uses `?` operator for propagation.
+- **Naming:** Rust standard snake_case. Struct names PascalCase. Module names snake_case.
+- **Imports:** Internal imports via `use crate::`. Wildcard imports (`use x::*`) are forbidden; use explicit imports.
+- **Clippy:** `cargo clippy` must pass with no warnings. `#[allow(...)]` only with a justification comment.
+- **Tests:** Each parser module must contain its own unit tests (`#[cfg(test)] mod tests`). Test data as inline strings. Currently 36 tests (18 parser + 4 export + 11 threshold + 3 summary).
+- **Async:** File I/O runs in background via tokio::spawn. FastQC zip processing uses spawn_blocking. The TUI event loop must never block.
+- **Terminal restore:** Terminal state must be restored even on panic (use panic hook).
 
-## Dikkat Edilecekler
+## Important Notes
 
-- samtools stats ve bcftools stats formatları benzer ama farklı. SN section'ındaki field index'leri farklıdır.
-- bcftools stats DP section'ında bin değerleri string olabilir (`>500` gibi). `DpEntry.bin` tipi `String`.
-- FastQC zip arşivleri içinde `*/fastqc_data.txt` yolu değişkenlik gösterebilir, `ends_with` ile aranır.
-- `##FastQC` header satırı `>>` ile başlamaz, `#` ile başlar — section parser'da dikkat.
-- ratatui her frame'de tüm UI'ı yeniden çizer (immediate mode). State'i UI'dan ayır. `draw()` her zaman `&AppState` alır, state mutasyonu sadece `update()` içinde yapılır.
-- Splash screen: Başlangıçta animasyonlu ASCII logo + spark partikülleri gösterilir. `splash_tick` 250ms tick ile artırılır (`Action::Render` handler'ında), 8 tick (~2sn) + veri hazır olunca ana UI'a geçilir. `pending_results` ile veri splash bitene kadar buffer'lanır.
-- crossterm event-stream feature'ı futures StreamExt gerektirir.
-- `--generate` modu stats dosyası / `_fastqc.zip` zaten varsa skip eder (idempotent).
-- Generator, samtools/bcftools/fastqc'nin PATH'de olup olmadığını kontrol eder.
-- FastQC çıktı isimlendirmesi: `sample.fastq.gz` → `sample_fastqc.zip`. FastQC kendi disk'e yazar, stdout capture gerekmez.
-- Overview tab'da `OverviewRow` struct'ı ile sort/filter altyapısı var. Yeni sütun eklemek: `build_overview_rows()` ve `SortColumn` enum'unu güncelle.
-- Search modu `Arc<AtomicBool>` ile EventHandler ve AppState arasında paylaşılır (async tokio task erişimi için).
-- CSV export `Option<T>` field'ları kullanır, csv crate None'ı boş string olarak yazar.
-- `--export-json` ve `--export-csv` birlikte kullanılabilir, veri bir kez yüklenir.
-- Summary tab `h`/`l` ile horizontal scroll destekler (frozen File sütunu + kaydırılabilir metrik sütunları).
-- `SummarySortColumn` enum 17 sütun üzerinde sort destekler, `s` tuşu context-aware: Summary tab'da SummarySortColumn, diğerlerinde SortColumn cycle eder.
-- ThresholdConfig TOML'dan yüklenebilir, `#[derive(Deserialize)]` ile. Default değerler biyoinformatik standartlarına göre.
-- GC% threshold'u `gc_deviation` olarak uygulanır: `abs(gc - 50.0)` hesaplanıp LowerIsBetter ile değerlendirilir.
-- `--strict` modu export sonrası `check_qc_failures()` ile tüm sample'ları evaluate eder, FAIL varsa exit(1).
-- CSV export threshold'lar verildiğinde `qc_status` sütunu ekler (`#[serde(skip_serializing_if = "Option::is_none")]`).
+- samtools stats and bcftools stats formats are similar but different. Field indices in the SN section differ.
+- bcftools stats DP section bin values can be strings (e.g. `>500`). `DpEntry.bin` type is `String`.
+- FastQC zip archives may have varying paths for `*/fastqc_data.txt`; matched using `ends_with`.
+- The `##FastQC` header line starts with `#`, not `>>` — be careful in the section parser.
+- ratatui redraws the entire UI every frame (immediate mode). Keep state separate from UI. `draw()` always takes `&AppState`; state mutation only happens in `update()`.
+- Splash screen: An animated ASCII logo + spark particles are shown at startup. `splash_tick` increments every 250ms (in the `Action::Render` handler); transitions to the main UI after 8 ticks (~2s) + data ready. `pending_results` buffers data until splash finishes. `splash_status` shows dynamic progress messages (e.g. "Running samtools stats on sample.bam").
+- crossterm event-stream feature requires futures StreamExt.
+- `--generate` mode skips if stats file / `_fastqc.zip` already exists (idempotent).
+- Generator checks whether samtools/bcftools/fastqc are available in PATH.
+- Generator accepts an `on_progress` callback for per-file status updates. In TUI mode, the callback sends `Action::SplashStatus`; in export mode, it writes to stderr via eprintln.
+- FastQC output naming: `sample.fastq.gz` → `sample_fastqc.zip`. FastQC writes to disk itself; no stdout capture needed.
+- Overview tab uses `OverviewRow` struct for sort/filter infrastructure. To add a new column: update `build_overview_rows()` and the `SortColumn` enum.
+- Search mode shares `Arc<AtomicBool>` between EventHandler and AppState (for async tokio task access).
+- CSV export uses `Option<T>` fields; the csv crate writes None as empty string.
+- `--export-json` and `--export-csv` can be used together; data is loaded once.
+- Summary tab supports horizontal scroll with `h`/`l` (frozen File column + scrollable metric columns).
+- `SummarySortColumn` enum supports sorting across 17 columns; `s` key is context-aware: cycles SummarySortColumn in Summary tab, SortColumn in others.
+- ThresholdConfig can be loaded from TOML via `#[derive(Deserialize)]`. Default values follow bioinformatics standards.
+- GC% threshold is implemented as `gc_deviation`: `abs(gc - 50.0)` is computed and evaluated with LowerIsBetter.
+- `--strict` mode evaluates all samples via `check_qc_failures()` after export; exits with code 1 if any FAIL.
+- CSV export adds a `qc_status` column when thresholds are provided (`#[serde(skip_serializing_if = "Option::is_none")]`).

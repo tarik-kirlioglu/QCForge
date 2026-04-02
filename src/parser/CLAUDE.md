@@ -1,40 +1,40 @@
 # Parser Module
 
-QC araç çıktılarını parse eden modüller. 3 parser, toplam 18 unit test.
+Modules for parsing QC tool outputs. 3 parsers, 18 unit tests total.
 
-## Desteklenen Formatlar
+## Supported Formats
 
 ### samtools stats (`parser/samtools.rs`)
-- Tab-separated, satır bazlı format
-- Parse edilen section'lar: SN (Summary Numbers), COV, GCF, GCL, IS, RL
-- `#` ile başlayan satırlar yorum/header
-- SN formatı: `SN\tkey:\tvalue\t# comment`
-- Key'deki trailing `:` strip edilmeli
-- Dosya tespiti: İlk satırlarda "This file was produced by samtools stats" aranır
-- 5 unit test
+- Tab-separated, line-based format
+- Parsed sections: SN (Summary Numbers), COV, GCF, GCL, IS, RL
+- Lines starting with `#` are comments/headers
+- SN format: `SN\tkey:\tvalue\t# comment`
+- Trailing `:` in keys must be stripped
+- File detection: first lines are searched for "This file was produced by samtools stats"
+- 5 unit tests
 
 ### bcftools stats (`parser/bcftools.rs`)
-- Benzer tab-separated format
-- Parse edilen section'lar: SN, TSTV, ST, AF, QUAL, IDD, DP
-- SN formatı: `SN\tid\tkey:\tvalue` (samtools'dan farklı: id field'i var)
-- DP.bin alanı String tipinde (`>500` gibi non-numeric değerler olabilir)
-- QUAL.num_tstv alanı f64 tipinde (1.5 gibi ondalıklı değerler)
-- Dosya tespiti: İlk satırlarda "This file was produced by bcftools stats" aranır
-- 7 unit test
+- Similar tab-separated format
+- Parsed sections: SN, TSTV, ST, AF, QUAL, IDD, DP
+- SN format: `SN\tid\tkey:\tvalue` (different from samtools: has an id field)
+- DP.bin field is String type (can contain non-numeric values like `>500`)
+- QUAL.num_tstv field is f64 type (decimal values like 1.5)
+- File detection: first lines are searched for "This file was produced by bcftools stats"
+- 7 unit tests
 
 ### FastQC (`parser/fastqc.rs`)
-- Zip arşivinden çıkarılır (`*_fastqc.zip` → `*/fastqc_data.txt`)
+- Extracted from zip archive (`*_fastqc.zip` → `*/fastqc_data.txt`)
 - Section format: `>>Module Name\tpass|warn|fail` ... `>>END_MODULE`
-- `#` satırları kolon header'ları
-- `##FastQC` header satırı section olarak algılanmamalı
-- Parse edilen modüller: Basic Statistics, Per base sequence quality, Per sequence quality scores, Per base sequence content, Per sequence GC content, Sequence Length Distribution, Overrepresented sequences
-- Zip extraction `spawn_blocking` ile yapılır (CPU-bound)
-- 6 unit test
+- `#` lines are column headers
+- `##FastQC` header line must not be detected as a section
+- Parsed modules: Basic Statistics, Per base sequence quality, Per sequence quality scores, Per base sequence content, Per sequence GC content, Sequence Length Distribution, Overrepresented sequences
+- Zip extraction uses `spawn_blocking` (CPU-bound)
+- 6 unit tests
 
-## Kod Kuralları
+## Code Rules
 
-- Her parser fonksiyonu `Result<T, QcForgeError>` döndürmeli
-- Parse hataları `QcForgeError::NumericParse` ile, dosya adı ve field bilgisi dahil
-- Bilinmeyen section tag'leri sessizce skip edilmeli (forward compatibility)
-- Raw key-value pair'leri her zaman `BTreeMap<String, String>` olarak da saklanmalı (gelecekte yeni field desteği için)
-- Unit test'lerde gerçek samtools/bcftools/FastQC çıktılarından alınmış küçük örnekler kullan (inline string)
+- Every parser function must return `Result<T, QcForgeError>`
+- Parse errors use `QcForgeError::NumericParse` with filename and field info included
+- Unknown section tags must be silently skipped (forward compatibility)
+- Raw key-value pairs should always be stored as `BTreeMap<String, String>` as well (for future field support)
+- Unit tests should use small samples taken from real samtools/bcftools/FastQC outputs (inline strings)

@@ -1,8 +1,8 @@
 # App Module
 
-Uygulama state machine ve event handling.
+Application state machine and event handling.
 
-## Mimari: Action-based Message Passing
+## Architecture: Action-based Message Passing
 
 ```
 EventHandler (tokio task)
@@ -12,64 +12,67 @@ App.update(action)
 ui::draw(frame, &app_state)
 ```
 
-## Bileşenler
+## Components
 
 ### `actions.rs` — Action Enum
-- Tüm kullanıcı ve sistem eylemleri tek bir enum'da
-- EventHandler crossterm event'lerini Action'a dönüştürür
-- App.update() Action'ları işler ve state'i günceller
-- Action'lar: Tick, Render, Quit, NextTab, PrevTab, ScrollUp, ScrollDown, ScrollLeft, ScrollRight, NextFile, PrevFile, ToggleHelp, CycleSortColumn, ToggleSortDirection, EnterSearchMode, ExitSearchMode, ConfirmSearch, SearchInput(char), SearchBackspace, Resize, LoadComplete, Error
+- All user and system actions in a single enum
+- EventHandler converts crossterm events into Actions
+- App.update() processes Actions and updates state
+- Actions: Tick, Render, Quit, NextTab, PrevTab, ScrollUp, ScrollDown, ScrollLeft, ScrollRight, NextFile, PrevFile, ToggleHelp, CycleSortColumn, ToggleSortDirection, EnterSearchMode, ExitSearchMode, ConfirmSearch, SearchInput(char), SearchBackspace, Resize, SplashStatus, LoadComplete, Error
 
 ### `state.rs` — AppState
-- `active_tab: ActiveTab` — hangi tab aktif (default: Overview)
-- `should_quit: bool` — çıkış flag'i
+- `active_tab: ActiveTab` — which tab is active (default: Summary)
+- `should_quit: bool` — quit flag
 - `show_help: bool` — help overlay
-- `loading: bool` — dosyalar yüklenirken true (splash screen gösterilir)
-- `error_message: Option<String>` — hata mesajı
-- `qc_results: Option<QcResults>` — parse edilmiş veriler
-- Per-tab selection index'leri: `samtools_selected`, `bcftools_selected`, `fastqc_selected`
+- `loading: bool` — true while files are loading (splash screen is shown)
+- `error_message: Option<String>` — error message
+- `qc_results: Option<QcResults>` — parsed data
+- Per-tab selection indices: `samtools_selected`, `bcftools_selected`, `fastqc_selected`
 - `scroll_offset: u16`
-- `sort_column: SortColumn` — Overview tablosunda aktif sıralama sütunu (File/Tool/Summary/Status)
-- `sort_ascending: bool` — sıralama yönü
-- `search_active: bool` — arama modu açık mı
-- `search_input: String` — anlık arama metni (yazarken)
-- `search_confirmed: String` — onaylanmış filtre (Enter sonrası)
-- `search_active_flag: Arc<AtomicBool>` — EventHandler ile paylaşılan search state
-- `splash_tick: u16` — splash animasyon tick sayacı (250ms aralıkla artırılır)
-- `splash_done: bool` — splash tamamlandı mı
-- `pending_results: Option<QcResults>` — splash bitmeden gelen veriler burada buffer'lanır
+- `sort_column: SortColumn` — active sort column in the Overview table (File/Tool/Summary/Status)
+- `sort_ascending: bool` — sort direction
+- `search_active: bool` — whether search mode is active
+- `search_input: String` — current search text (while typing)
+- `search_confirmed: String` — confirmed filter (after Enter)
+- `search_active_flag: Arc<AtomicBool>` — search state shared with EventHandler
+- `splash_tick: u16` — splash animation tick counter (incremented every 250ms)
+- `splash_done: bool` — whether splash has completed
+- `splash_status: String` — status message displayed on splash screen
+- `pending_results: Option<QcResults>` — data received before splash finishes is buffered here
 
 ### `state.rs` — SortColumn Enum
-- `File` → `Tool` → `Summary` → `Status` → `File` (cycle, Overview tab için)
-- `next()` metodu ile döngüsel geçiş
+- `File` → `Tool` → `Summary` → `Status` → `File` (cycle, for Overview tab)
+- Cyclic transition via `next()` method
 
 ### `state.rs` — SummarySortColumn Enum
-- 17 variant: File, Tool, Reads, MappedPct, DupPct, ErrorRate, AvgQuality, Variants, Snps, Indels, TsTv, TotalSeqs, GcPct, PassModules, WarnModules, FailModules, OverallQc
-- `next()` ve `index()` metodları
-- Summary tab'da `s` tuşu ile cycle edilir
+- 17 variants: File, Tool, Reads, MappedPct, DupPct, ErrorRate, AvgQuality, Variants, Snps, Indels, TsTv, TotalSeqs, GcPct, PassModules, WarnModules, FailModules, OverallQc
+- `next()` and `index()` methods
+- Cycled with `s` key in the Summary tab
 
 ### `state.rs` — ActiveTab Enum
-- `Overview` — aggregate dashboard (default açılış tab'ı)
-- `Samtools` — samtools stats detay görünümü
-- `Bcftools` — bcftools stats detay görünümü
-- `Fastqc` — FastQC detay görünümü
+- `Summary` — MultiQC-style wide table (default opening tab)
+- `Overview` — aggregate dashboard
+- `Samtools` — samtools stats detail view
+- `Bcftools` — bcftools stats detail view
+- `Fastqc` — FastQC detail view
 
 ### `mod.rs` — App update logic
-- `update(action: Action)` ile state güncellemesi
-- NextFile/PrevFile aktif tab'a göre ilgili selection index'i günceller
-- Overview tab'da NextFile/PrevFile no-op
-- Search action'ları `set_search_active()` ile hem local state hem `Arc<AtomicBool>` günceller
-- CycleSortColumn context-aware: Summary tab'da `summary_sort_column.next()`, diğerlerinde `sort_column.next()`
-- ScrollLeft/ScrollRight sadece Summary tab'da `summary_horizontal_offset` günceller
-- NextFile/PrevFile Summary tab'da `summary_selected` günceller
-- `thresholds: ThresholdConfig` — QC eşik kuralları (TOML'dan yüklenebilir veya default)
-- `Action::Render` handler'ı: loading sırasında `splash_tick` artırır, 8 tick + veri hazır olunca `pending_results`'ı `qc_results`'a taşıyıp `loading=false` yapar
-- `Action::LoadComplete`: splash bitmemişse veriyi `pending_results`'a buffer'lar, bitmişse direkt `qc_results`'a atar
+- State updates via `update(action: Action)`
+- NextFile/PrevFile updates the relevant selection index based on active tab
+- NextFile/PrevFile is a no-op on the Overview tab
+- Search actions use `set_search_active()` to update both local state and `Arc<AtomicBool>`
+- CycleSortColumn is context-aware: `summary_sort_column.next()` in Summary tab, `sort_column.next()` in others
+- ScrollLeft/ScrollRight only updates `summary_horizontal_offset` in the Summary tab
+- NextFile/PrevFile updates `summary_selected` in the Summary tab
+- `thresholds: ThresholdConfig` — QC threshold rules (loadable from TOML or default)
+- `Action::SplashStatus` handler: updates `splash_status` message
+- `Action::Render` handler: increments `splash_tick` during loading; transitions `pending_results` to `qc_results` and sets `loading=false` after 8 ticks + data ready
+- `Action::LoadComplete`: buffers data to `pending_results` if splash hasn't finished; otherwise sets `qc_results` directly
 
-## Kurallar
+## Rules
 
-- App state'i `Clone` veya `Copy` derive etmemeli (büyük veri içerebilir)
-- State mutation sadece `update()` içinde olmalı
-- UI render fonksiyonları state'i değiştirmemeli (`&self` veya `&AppState`)
-- Loading sırasında keyboard event'leri yine de işlenmeli (quit vb.)
-- Panic hook ile terminal restore garantilenmeli
+- AppState must not derive `Clone` or `Copy` (may contain large data)
+- State mutation must only happen inside `update()`
+- UI render functions must not modify state (`&self` or `&AppState`)
+- Keyboard events must still be processed during loading (quit, etc.)
+- Terminal restore must be guaranteed via panic hook
