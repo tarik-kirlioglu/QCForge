@@ -2,6 +2,7 @@ mod app;
 mod cli;
 mod error;
 mod event;
+mod export;
 mod generator;
 mod parser;
 mod scanner;
@@ -9,6 +10,8 @@ mod ui;
 
 use std::io;
 use std::panic;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 
 use clap::Parser;
 use crossterm::execute;
@@ -42,13 +45,22 @@ async fn main() -> Result<()> {
         }
     }
 
-    // JSON export mode: no TUI, just parse and dump
-    if let Some(ref json_path) = cli.export_json {
+    // Export mode: no TUI, just parse and dump
+    if cli.export_json.is_some() || cli.export_csv.is_some() {
         let results = load_qc_data(&cli.input_dir, cli.max_depth).await?;
-        let json = serde_json::to_string_pretty(&results)
-            .map_err(|e| error::QcForgeError::Terminal(e.to_string()))?;
-        std::fs::write(json_path, json)?;
-        eprintln!("QC data exported to {}", json_path.display());
+
+        if let Some(ref json_path) = cli.export_json {
+            let json = serde_json::to_string_pretty(&results)
+                .map_err(|e| error::QcForgeError::Terminal(e.to_string()))?;
+            std::fs::write(json_path, json)?;
+            eprintln!("QC data exported to {}", json_path.display());
+        }
+
+        if let Some(ref csv_path) = cli.export_csv {
+            export::write_csv(csv_path, &results)?;
+            eprintln!("QC summary exported to {}", csv_path.display());
+        }
+
         return Ok(());
     }
 
@@ -70,8 +82,11 @@ async fn main() -> Result<()> {
     // Action channel
     let (action_tx, mut action_rx) = mpsc::unbounded_channel::<Action>();
 
+    // Shared search state for event handler
+    let search_active_flag = Arc::new(AtomicBool::new(false));
+
     // Spawn event handler
-    let _event_handler = event::EventHandler::new(action_tx.clone());
+    let _event_handler = event::EventHandler::new(action_tx.clone(), search_active_flag.clone());
 
     // Spawn file loading task
     let scan_path = cli.input_dir.clone();
@@ -89,7 +104,7 @@ async fn main() -> Result<()> {
     });
 
     // App state
-    let mut state = AppState::new();
+    let mut state = AppState::new(search_active_flag);
 
     // Main loop
     loop {

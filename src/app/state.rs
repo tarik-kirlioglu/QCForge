@@ -1,4 +1,26 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+
 use crate::parser::types::QcResults;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SortColumn {
+    File,
+    Tool,
+    Summary,
+    Status,
+}
+
+impl SortColumn {
+    pub fn next(&self) -> Self {
+        match self {
+            SortColumn::File => SortColumn::Tool,
+            SortColumn::Tool => SortColumn::Summary,
+            SortColumn::Summary => SortColumn::Status,
+            SortColumn::Status => SortColumn::File,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActiveTab {
@@ -40,10 +62,16 @@ pub struct AppState {
     pub bcftools_selected: usize,
     pub fastqc_selected: usize,
     pub scroll_offset: u16,
+    pub sort_column: SortColumn,
+    pub sort_ascending: bool,
+    pub search_active: bool,
+    pub search_input: String,
+    pub search_confirmed: String,
+    pub search_active_flag: Arc<AtomicBool>,
 }
 
 impl AppState {
-    pub fn new() -> Self {
+    pub fn new(search_active_flag: Arc<AtomicBool>) -> Self {
         Self {
             active_tab: ActiveTab::Overview,
             should_quit: false,
@@ -55,6 +83,17 @@ impl AppState {
             bcftools_selected: 0,
             fastqc_selected: 0,
             scroll_offset: 0,
+            sort_column: SortColumn::File,
+            sort_ascending: true,
+            search_active: false,
+            search_input: String::new(),
+            search_confirmed: String::new(),
+            search_active_flag,
         }
+    }
+
+    pub(crate) fn set_search_active(&mut self, active: bool) {
+        self.search_active = active;
+        self.search_active_flag.store(active, Ordering::Relaxed);
     }
 }

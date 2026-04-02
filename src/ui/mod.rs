@@ -104,6 +104,9 @@ fn render_help_overlay(frame: &mut Frame) {
         Line::from("  ← / →/ Tab   Switch tabs"),
         Line::from("  j / k / ↑↓   Scroll"),
         Line::from("  n / p         Next/Prev file"),
+        Line::from("  s             Cycle sort column"),
+        Line::from("  S             Toggle sort direction"),
+        Line::from("  /             Search files"),
         Line::from("  ?             Toggle this help"),
         Line::from(""),
         Line::from(Span::styled(

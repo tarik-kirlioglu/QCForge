@@ -66,6 +66,31 @@ impl AppState {
             Action::ToggleHelp => {
                 self.show_help = !self.show_help;
             }
+            Action::CycleSortColumn => {
+                self.sort_column = self.sort_column.next();
+            }
+            Action::ToggleSortDirection => {
+                self.sort_ascending = !self.sort_ascending;
+            }
+            Action::EnterSearchMode => {
+                self.search_input = self.search_confirmed.clone();
+                self.set_search_active(true);
+            }
+            Action::ExitSearchMode => {
+                self.search_input.clear();
+                self.search_confirmed.clear();
+                self.set_search_active(false);
+            }
+            Action::ConfirmSearch => {
+                self.search_confirmed = self.search_input.clone();
+                self.set_search_active(false);
+            }
+            Action::SearchInput(c) => {
+                self.search_input.push(c);
+            }
+            Action::SearchBackspace => {
+                self.search_input.pop();
+            }
             Action::LoadComplete(results) => {
                 self.qc_results = Some(results);
                 self.loading = false;

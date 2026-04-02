@@ -1,5 +1,7 @@
 pub mod key;
 
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
 
 use crossterm::event::{Event as CrosstermEvent, EventStream};
@@ -14,7 +16,7 @@ pub struct EventHandler {
 }
 
 impl EventHandler {
-    pub fn new(tx: UnboundedSender<Action>) -> Self {
+    pub fn new(tx: UnboundedSender<Action>, search_active: Arc<AtomicBool>) -> Self {
         let task = tokio::spawn(async move {
             let mut reader = EventStream::new();
             let mut tick_interval = tokio::time::interval(Duration::from_millis(250));
@@ -29,7 +31,8 @@ impl EventHandler {
                     event = reader.next() => {
                         match event {
                             Some(Ok(CrosstermEvent::Key(key))) => {
-                                if let Some(action) = map_key_event(key) {
+                                let is_searching = search_active.load(Ordering::Relaxed);
+                                if let Some(action) = map_key_event(key, is_searching) {
                                     if tx.send(action).is_err() {
                                         break;
                                     }

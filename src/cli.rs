@@ -21,6 +21,11 @@ pub struct Cli {
     #[arg(long, value_name = "FILE")]
     pub export_json: Option<PathBuf>,
 
+    /// Export parsed QC summary as CSV/TSV and exit (no TUI)
+    /// Use .tsv extension for tab-delimited output
+    #[arg(long, value_name = "FILE")]
+    pub export_csv: Option<PathBuf>,
+
     /// Auto-generate stats from BAM/VCF files using samtools/bcftools
     #[arg(short, long)]
     pub generate: bool,

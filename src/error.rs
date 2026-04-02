@@ -24,6 +24,9 @@ pub enum QcForgeError {
     #[error("Invalid numeric value in {field}: {value}")]
     NumericParse { field: String, value: String },
 
+    #[error("CSV error: {0}")]
+    Csv(#[from] csv::Error),
+
     #[error("Terminal error: {0}")]
     Terminal(String),
 }

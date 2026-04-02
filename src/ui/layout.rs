@@ -26,7 +26,7 @@ pub fn render_chrome(frame: &mut Frame, state: &AppState) -> AppLayout {
 
     render_header(frame, chunks[0], state);
     render_tabs(frame, chunks[1], state);
-    render_footer(frame, chunks[3]);
+    render_footer(frame, chunks[3], state);
 
     AppLayout {
         content: chunks[2],
@@ -85,19 +85,52 @@ fn render_tabs(frame: &mut Frame, area: Rect, state: &AppState) {
     frame.render_widget(tabs, area);
 }
 
-fn render_footer(frame: &mut Frame, area: Rect) {
-    let footer = Line::from(vec![
+pub fn render_footer(frame: &mut Frame, area: Rect, state: &AppState) {
+    if state.search_active {
+        let search_line = Line::from(vec![
+            Span::styled(
+                " /",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(&state.search_input, Style::default().fg(Color::White)),
+            Span::styled(
+                "\u{2588}",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::SLOW_BLINK),
+            ),
+        ]);
+        frame.render_widget(Paragraph::new(search_line), area);
+        return;
+    }
+
+    let mut spans = vec![
         Span::styled(" ←/→", Style::default().fg(Color::Cyan)),
         Span::styled(" Tabs  ", Style::default().fg(Color::Gray)),
         Span::styled("j/k", Style::default().fg(Color::Cyan)),
         Span::styled(" Scroll  ", Style::default().fg(Color::Gray)),
         Span::styled("n/p", Style::default().fg(Color::Cyan)),
         Span::styled(" File  ", Style::default().fg(Color::Gray)),
+        Span::styled("s/S", Style::default().fg(Color::Cyan)),
+        Span::styled(" Sort  ", Style::default().fg(Color::Gray)),
+        Span::styled("/", Style::default().fg(Color::Cyan)),
+        Span::styled(" Search  ", Style::default().fg(Color::Gray)),
         Span::styled("?", Style::default().fg(Color::Cyan)),
         Span::styled(" Help  ", Style::default().fg(Color::Gray)),
         Span::styled("q", Style::default().fg(Color::Cyan)),
         Span::styled(" Quit", Style::default().fg(Color::Gray)),
-    ]);
+    ];
 
-    frame.render_widget(Paragraph::new(footer), area);
+    if !state.search_confirmed.is_empty() {
+        spans.push(Span::styled("  [filter: ", Style::default().fg(Color::DarkGray)));
+        spans.push(Span::styled(
+            &state.search_confirmed,
+            Style::default().fg(Color::Yellow),
+        ));
+        spans.push(Span::styled("]", Style::default().fg(Color::DarkGray)));
+    }
+
+    frame.render_widget(Paragraph::new(Line::from(spans)), area);
 }
