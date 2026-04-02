@@ -18,7 +18,7 @@ ui::draw(frame, &app_state)
 - Tüm kullanıcı ve sistem eylemleri tek bir enum'da
 - EventHandler crossterm event'lerini Action'a dönüştürür
 - App.update() Action'ları işler ve state'i günceller
-- Action'lar: Tick, Render, Quit, NextTab, PrevTab, ScrollUp, ScrollDown, NextFile, PrevFile, ToggleHelp, CycleSortColumn, ToggleSortDirection, EnterSearchMode, ExitSearchMode, ConfirmSearch, SearchInput(char), SearchBackspace, Resize, LoadComplete, Error
+- Action'lar: Tick, Render, Quit, NextTab, PrevTab, ScrollUp, ScrollDown, ScrollLeft, ScrollRight, NextFile, PrevFile, ToggleHelp, CycleSortColumn, ToggleSortDirection, EnterSearchMode, ExitSearchMode, ConfirmSearch, SearchInput(char), SearchBackspace, Resize, LoadComplete, Error
 
 ### `state.rs` — AppState
 - `active_tab: ActiveTab` — hangi tab aktif (default: Overview)
@@ -37,8 +37,13 @@ ui::draw(frame, &app_state)
 - `search_active_flag: Arc<AtomicBool>` — EventHandler ile paylaşılan search state
 
 ### `state.rs` — SortColumn Enum
-- `File` → `Tool` → `Summary` → `Status` → `File` (cycle)
+- `File` → `Tool` → `Summary` → `Status` → `File` (cycle, Overview tab için)
 - `next()` metodu ile döngüsel geçiş
+
+### `state.rs` — SummarySortColumn Enum
+- 17 variant: File, Tool, Reads, MappedPct, DupPct, ErrorRate, AvgQuality, Variants, Snps, Indels, TsTv, TotalSeqs, GcPct, PassModules, WarnModules, FailModules, OverallQc
+- `next()` ve `index()` metodları
+- Summary tab'da `s` tuşu ile cycle edilir
 
 ### `state.rs` — ActiveTab Enum
 - `Overview` — aggregate dashboard (default açılış tab'ı)
@@ -51,7 +56,10 @@ ui::draw(frame, &app_state)
 - NextFile/PrevFile aktif tab'a göre ilgili selection index'i günceller
 - Overview tab'da NextFile/PrevFile no-op
 - Search action'ları `set_search_active()` ile hem local state hem `Arc<AtomicBool>` günceller
-- CycleSortColumn/ToggleSortDirection sort state'i günceller
+- CycleSortColumn context-aware: Summary tab'da `summary_sort_column.next()`, diğerlerinde `sort_column.next()`
+- ScrollLeft/ScrollRight sadece Summary tab'da `summary_horizontal_offset` günceller
+- NextFile/PrevFile Summary tab'da `summary_selected` günceller
+- `thresholds: ThresholdConfig` — QC eşik kuralları (TOML'dan yüklenebilir veya default)
 
 ## Kurallar
 

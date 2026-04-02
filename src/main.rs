@@ -4,6 +4,7 @@ mod error;
 mod event;
 mod export;
 mod generator;
+mod threshold;
 mod parser;
 mod scanner;
 mod ui;
@@ -27,10 +28,18 @@ use app::state::AppState;
 use cli::Cli;
 use error::Result;
 use parser::types::QcResults;
+use threshold::ThresholdConfig;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    // Load thresholds
+    let thresholds = if let Some(ref path) = cli.thresholds {
+        ThresholdConfig::load_from_file(path)?
+    } else {
+        ThresholdConfig::default()
+    };
 
     // Generate stats from BAM/VCF if requested
     if cli.generate {
@@ -57,8 +66,17 @@ async fn main() -> Result<()> {
         }
 
         if let Some(ref csv_path) = cli.export_csv {
-            export::write_csv(csv_path, &results)?;
+            export::write_csv(csv_path, &results, Some(&thresholds))?;
             eprintln!("QC summary exported to {}", csv_path.display());
+        }
+
+        if cli.strict {
+            let has_fail = check_qc_failures(&results, &thresholds);
+            if has_fail {
+                eprintln!("QC FAIL: one or more samples failed threshold checks");
+                std::process::exit(1);
+            }
+            eprintln!("QC PASS: all samples passed threshold checks");
         }
 
         return Ok(());
@@ -104,7 +122,7 @@ async fn main() -> Result<()> {
     });
 
     // App state
-    let mut state = AppState::new(search_active_flag);
+    let mut state = AppState::new(search_active_flag, thresholds.clone());
 
     // Main loop
     loop {
@@ -165,4 +183,43 @@ async fn load_qc_data(
     }
 
     Ok(results)
+}
+
+fn check_qc_failures(results: &QcResults, thresholds: &ThresholdConfig) -> bool {
+    use threshold::QcLevel;
+
+    for r in &results.samtools_reports {
+        let level = thresholds.evaluate_sample(
+            Some(r.summary.mapping_percent()),
+            Some(r.summary.duplication_percent()),
+            Some(r.summary.error_rate),
+            None,
+            None,
+        );
+        if level == QcLevel::Fail {
+            return true;
+        }
+    }
+
+    for r in &results.bcftools_reports {
+        let level = thresholds.evaluate_sample(None, None, None, Some(r.tstv.ts_tv_ratio), None);
+        if level == QcLevel::Fail {
+            return true;
+        }
+    }
+
+    for r in &results.fastqc_reports {
+        let level = thresholds.evaluate_sample(
+            None,
+            None,
+            None,
+            None,
+            Some(r.basic_statistics.percent_gc),
+        );
+        if level == QcLevel::Fail {
+            return true;
+        }
+    }
+
+    false
 }

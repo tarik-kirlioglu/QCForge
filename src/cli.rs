@@ -33,6 +33,14 @@ pub struct Cli {
     /// Output directory for generated stats files (default: same as input)
     #[arg(long, value_name = "DIR")]
     pub output_dir: Option<PathBuf>,
+
+    /// QC threshold config file (TOML format, uses defaults if not specified)
+    #[arg(long, value_name = "FILE")]
+    pub thresholds: Option<PathBuf>,
+
+    /// Exit with code 1 if any sample fails QC thresholds
+    #[arg(long)]
+    pub strict: bool,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug)]

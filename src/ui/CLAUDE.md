@@ -22,6 +22,7 @@ ui/
 
 | Tab | İçerik |
 |-----|--------|
+| Summary | MultiQC-tarzı geniş tablo: tüm sample'lar + tüm metrikler, threshold renkli hücreler, h/l horizontal scroll |
 | Overview | Dosya sayıları, aggregate stats, avg mapping/dup gauge, sıralanabilir+filtrelenebilir dosya listesi |
 | samtools | Summary Numbers tablosu + Mapping/Duplication/Properly Paired gauge'ları |
 | bcftools | Summary + Ts/Tv + Substitution Types (inline bar, Ts=cyan Tv=magenta) + InDel Distribution (del=red ins=green) |
@@ -61,8 +62,9 @@ ui/
 - `←` / `→` / `Tab`: Tab değiştir
 - `j` / `k` / `↑` / `↓`: Scroll
 - `n` / `p`: Dosyalar arası geçiş
-- `s`: Sort sütununu değiştir (File → Tool → Summary → Status)
+- `s`: Sort sütununu değiştir (context-aware: Overview vs Summary)
 - `S`: Sort yönünü değiştir (asc/desc)
 - `/`: Arama moduna gir (real-time filtreleme, Enter onayla, Esc temizle)
+- `h` / `l`: Summary tab'da sütunları yatay kaydır
 - `Ctrl+C`: Quit
 - `?`: Help overlay toggle

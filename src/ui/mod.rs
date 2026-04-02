@@ -28,6 +28,7 @@ pub fn draw(frame: &mut Frame, state: &AppState) {
 
     // Tab content
     match state.active_tab {
+        ActiveTab::Summary => tabs::summary::render(frame, app_layout.content, state),
         ActiveTab::Overview => tabs::overview::render(frame, app_layout.content, state),
         ActiveTab::Samtools => tabs::samtools::render(frame, app_layout.content, state),
         ActiveTab::Bcftools => tabs::bcftools::render(frame, app_layout.content, state),
@@ -107,6 +108,7 @@ fn render_help_overlay(frame: &mut Frame) {
         Line::from("  s             Cycle sort column"),
         Line::from("  S             Toggle sort direction"),
         Line::from("  /             Search files"),
+        Line::from("  h / l         Scroll columns (Summary)"),
         Line::from("  ?             Toggle this help"),
         Line::from(""),
         Line::from(Span::styled(

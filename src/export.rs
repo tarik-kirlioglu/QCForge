@@ -4,6 +4,7 @@ use serde::Serialize;
 
 use crate::error::{QcForgeError, Result};
 use crate::parser::types::{ModuleStatus, QcResults};
+use crate::threshold::ThresholdConfig;
 
 #[derive(Serialize)]
 struct QcRow {
@@ -22,9 +23,11 @@ struct QcRow {
     pass_modules: Option<u32>,
     warn_modules: Option<u32>,
     fail_modules: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    qc_status: Option<String>,
 }
 
-pub fn write_csv(path: &Path, results: &QcResults) -> Result<()> {
+pub fn write_csv(path: &Path, results: &QcResults, thresholds: Option<&ThresholdConfig>) -> Result<()> {
     let is_tsv = path
         .extension()
         .is_some_and(|ext| ext.eq_ignore_ascii_case("tsv"));
@@ -55,6 +58,17 @@ pub fn write_csv(path: &Path, results: &QcResults) -> Result<()> {
             pass_modules: None,
             warn_modules: None,
             fail_modules: None,
+            qc_status: thresholds.map(|t| {
+                t.evaluate_sample(
+                    Some(report.summary.mapping_percent()),
+                    Some(report.summary.duplication_percent()),
+                    Some(report.summary.error_rate),
+                    None,
+                    None,
+                )
+                .label()
+                .to_string()
+            }),
         })?;
     }
 
@@ -80,6 +94,11 @@ pub fn write_csv(path: &Path, results: &QcResults) -> Result<()> {
             pass_modules: None,
             warn_modules: None,
             fail_modules: None,
+            qc_status: thresholds.map(|t| {
+                t.evaluate_sample(None, None, None, Some(report.tstv.ts_tv_ratio), None)
+                    .label()
+                    .to_string()
+            }),
         })?;
     }
 
@@ -118,6 +137,17 @@ pub fn write_csv(path: &Path, results: &QcResults) -> Result<()> {
             pass_modules: Some(pass_count),
             warn_modules: Some(warn_count),
             fail_modules: Some(fail_count),
+            qc_status: thresholds.map(|t| {
+                t.evaluate_sample(
+                    None,
+                    None,
+                    None,
+                    None,
+                    Some(report.basic_statistics.percent_gc),
+                )
+                .label()
+                .to_string()
+            }),
         })?;
     }
 
@@ -217,6 +247,7 @@ mod tests {
                         pass_modules: None,
                         warn_modules: None,
                         fail_modules: None,
+                        qc_status: None,
                     })
                     .unwrap();
             }
@@ -252,6 +283,7 @@ mod tests {
                     pass_modules: None,
                     warn_modules: None,
                     fail_modules: None,
+                    qc_status: None,
                 })
                 .ok();
             // Just verify no panic with empty data
@@ -266,7 +298,7 @@ mod tests {
         let results = make_results();
         let dir = std::env::temp_dir();
         let csv_path = dir.join("qcforge_test.csv");
-        write_csv(&csv_path, &results).unwrap();
+        write_csv(&csv_path, &results, None).unwrap();
 
         let content = std::fs::read_to_string(&csv_path).unwrap();
         assert!(content.contains("filename,tool,"));
@@ -283,7 +315,7 @@ mod tests {
         let results = make_results();
         let dir = std::env::temp_dir();
         let tsv_path = dir.join("qcforge_test.tsv");
-        write_csv(&tsv_path, &results).unwrap();
+        write_csv(&tsv_path, &results, None).unwrap();
 
         let content = std::fs::read_to_string(&tsv_path).unwrap();
         assert!(content.contains("filename\ttool\t"));

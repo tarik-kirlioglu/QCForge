@@ -27,6 +27,9 @@ pub enum QcForgeError {
     #[error("CSV error: {0}")]
     Csv(#[from] csv::Error),
 
+    #[error("TOML parse error: {0}")]
+    TomlParse(String),
+
     #[error("Terminal error: {0}")]
     Terminal(String),
 }

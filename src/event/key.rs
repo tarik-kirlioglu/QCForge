@@ -27,6 +27,8 @@ pub fn map_key_event(key: KeyEvent, search_active: bool) -> Option<Action> {
         KeyCode::Char('s') => Some(Action::CycleSortColumn),
         KeyCode::Char('S') => Some(Action::ToggleSortDirection),
         KeyCode::Char('/') => Some(Action::EnterSearchMode),
+        KeyCode::Char('h') => Some(Action::ScrollLeft),
+        KeyCode::Char('l') => Some(Action::ScrollRight),
         _ => None,
     }
 }

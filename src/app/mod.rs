@@ -28,9 +28,28 @@ impl AppState {
             Action::ScrollUp => {
                 self.scroll_offset = self.scroll_offset.saturating_sub(1);
             }
+            Action::ScrollLeft => {
+                if self.active_tab == ActiveTab::Summary {
+                    self.summary_horizontal_offset =
+                        self.summary_horizontal_offset.saturating_sub(1);
+                }
+            }
+            Action::ScrollRight => {
+                if self.active_tab == ActiveTab::Summary {
+                    self.summary_horizontal_offset =
+                        self.summary_horizontal_offset.saturating_add(1);
+                }
+            }
             Action::NextFile => {
                 if let Some(ref results) = self.qc_results {
                     match self.active_tab {
+                        ActiveTab::Summary => {
+                            let total = results.samtools_reports.len()
+                                + results.bcftools_reports.len()
+                                + results.fastqc_reports.len();
+                            let max = total.saturating_sub(1);
+                            self.summary_selected = (self.summary_selected + 1).min(max);
+                        }
                         ActiveTab::Samtools => {
                             let max = results.samtools_reports.len().saturating_sub(1);
                             self.samtools_selected = (self.samtools_selected + 1).min(max);
@@ -50,6 +69,9 @@ impl AppState {
             }
             Action::PrevFile => {
                 match self.active_tab {
+                    ActiveTab::Summary => {
+                        self.summary_selected = self.summary_selected.saturating_sub(1);
+                    }
                     ActiveTab::Samtools => {
                         self.samtools_selected = self.samtools_selected.saturating_sub(1);
                     }
@@ -66,9 +88,14 @@ impl AppState {
             Action::ToggleHelp => {
                 self.show_help = !self.show_help;
             }
-            Action::CycleSortColumn => {
-                self.sort_column = self.sort_column.next();
-            }
+            Action::CycleSortColumn => match self.active_tab {
+                ActiveTab::Summary => {
+                    self.summary_sort_column = self.summary_sort_column.next();
+                }
+                _ => {
+                    self.sort_column = self.sort_column.next();
+                }
+            },
             Action::ToggleSortDirection => {
                 self.sort_ascending = !self.sort_ascending;
             }

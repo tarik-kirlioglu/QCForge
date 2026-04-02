@@ -19,6 +19,8 @@ pub enum Action {
     ConfirmSearch,
     SearchInput(char),
     SearchBackspace,
+    ScrollLeft,
+    ScrollRight,
     Resize(u16, u16),
     LoadComplete(QcResults),
     Error(String),
