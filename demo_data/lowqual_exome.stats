@@ -1,0 +1,45 @@
+# This file was produced by samtools stats (1.17+htslib-1.17)
+# The command line was: samtools stats lowqual_exome.bam
+SN	raw total sequences:	42310500
+SN	filtered sequences:	0
+SN	reads mapped:	31245800
+SN	reads mapped and paired:	29120400
+SN	reads unmapped:	11064700
+SN	reads duplicated:	14520300
+SN	reads MQ0:	5230100
+SN	reads QC failed:	1250000
+SN	reads properly paired:	27345200
+SN	total length:	6388785500
+SN	bases mapped:	4718035800
+SN	bases mapped (cigar):	4512340200
+SN	error rate:	1.2e-02
+SN	average length:	151.0
+SN	average quality:	24.5
+SN	insert size average:	185.3
+SN	insert size standard deviation:	142.7
+SN	pairs on different chromosomes:	1845300
+COV	[1-1]	1	3250000
+COV	[2-2]	2	4840000
+COV	[5-5]	5	6120000
+COV	[10-10]	10	4340000
+COV	[20-20]	20	2560000
+COV	[30-30]	30	1230000
+IS	100	185000	151000	17000	17000
+IS	150	225000	188000	18500	18500
+IS	200	142000	115000	13500	13500
+IS	300	58000	41000	8500	8500
+RL	151	42310500
+GCF	10.00	3520000
+GCF	20.00	6430000
+GCF	30.00	9610000
+GCF	40.00	10340000
+GCF	50.00	7430000
+GCF	60.00	3293000
+GCF	70.00	1687500
+GCL	10.00	3720000
+GCL	20.00	6630000
+GCL	30.00	9410000
+GCL	40.00	10140000
+GCL	50.00	7630000
+GCL	60.00	3093000
+GCL	70.00	1687500

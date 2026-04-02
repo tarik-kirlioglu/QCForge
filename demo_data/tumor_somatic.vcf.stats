@@ -1,0 +1,55 @@
+# This file was produced by bcftools stats (1.17+htslib-1.17)
+# The command line was: bcftools stats tumor_somatic.vcf.gz
+SN	0	number of samples:	1
+SN	0	number of records:	24530
+SN	0	number of no-ALTs:	120
+SN	0	number of SNPs:	19840
+SN	0	number of MNPs:	45
+SN	0	number of indels:	4320
+SN	0	number of others:	205
+SN	0	number of multiallelic sites:	890
+SN	0	number of multiallelic SNP sites:	234
+TSTV	0	13250	6590	2.01	12800	6400	2.00
+ST	0	A>C	1240
+ST	0	A>G	3850
+ST	0	A>T	980
+ST	0	C>A	1120
+ST	0	C>G	890
+ST	0	C>T	4210
+ST	0	G>A	3920
+ST	0	G>C	910
+ST	0	G>T	1150
+ST	0	T>A	940
+ST	0	T>C	3780
+ST	0	T>G	1250
+AF	0	0.000000	0	0
+AF	0	0.050000	4520	980
+AF	0	0.100000	3210	720
+AF	0	0.250000	5430	1240
+AF	0	0.500000	4820	1050
+AF	0	1.000000	1860	330
+QUAL	0	10.0	1520	340	1.8
+QUAL	0	20.0	2840	520	1.9
+QUAL	0	30.0	4210	850	2.0
+QUAL	0	50.0	5830	1240	2.1
+QUAL	0	100.0	3890	920	2.0
+QUAL	0	200.0	1550	450	1.9
+IDD	0	-10	85
+IDD	0	-5	245
+IDD	0	-3	380
+IDD	0	-2	520
+IDD	0	-1	890
+IDD	0	1	940
+IDD	0	2	480
+IDD	0	3	350
+IDD	0	5	230
+IDD	0	10	95
+IDD	0	15	45
+IDD	0	20	25
+DP	0	0	120	0.49	120	0.49
+DP	0	5	450	1.83	450	1.83
+DP	0	10	2340	9.54	2340	9.54
+DP	0	20	8520	34.73	8520	34.73
+DP	0	30	7230	29.47	7230	29.47
+DP	0	50	4120	16.80	4120	16.80
+DP	0	>50	1750	7.13	1750	7.13

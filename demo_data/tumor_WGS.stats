@@ -1,0 +1,45 @@
+# This file was produced by samtools stats (1.17+htslib-1.17)
+# The command line was: samtools stats tumor_WGS.bam
+SN	raw total sequences:	84523610
+SN	filtered sequences:	0
+SN	reads mapped:	82145920
+SN	reads mapped and paired:	80234512
+SN	reads unmapped:	2377690
+SN	reads duplicated:	6321450
+SN	reads MQ0:	1250340
+SN	reads QC failed:	0
+SN	reads properly paired:	79512340
+SN	total length:	12763064510
+SN	bases mapped:	12402533920
+SN	bases mapped (cigar):	12105234100
+SN	error rate:	2.8e-03
+SN	average length:	151.0
+SN	average quality:	34.2
+SN	insert size average:	312.5
+SN	insert size standard deviation:	85.3
+SN	pairs on different chromosomes:	425100
+COV	[1-1]	1	1250000
+COV	[2-2]	2	2840000
+COV	[5-5]	5	5120000
+COV	[10-10]	10	8340000
+COV	[20-20]	20	12560000
+COV	[30-30]	30	15230000
+COV	[50-50]	50	4210000
+IS	200	125000	121000	2000	2000
+IS	250	285000	278000	3500	3500
+IS	300	342000	335000	3500	3500
+IS	350	298000	291000	3500	3500
+IS	400	125000	121000	2000	2000
+RL	151	84523610
+GCF	20.00	4520000
+GCF	30.00	8430000
+GCF	40.00	25610000
+GCF	50.00	28340000
+GCF	60.00	12430000
+GCF	70.00	5193610
+GCL	20.00	4320000
+GCL	30.00	8230000
+GCL	40.00	25810000
+GCL	50.00	28540000
+GCL	60.00	12230000
+GCL	70.00	5393610

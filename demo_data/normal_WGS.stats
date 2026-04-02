@@ -1,0 +1,45 @@
+# This file was produced by samtools stats (1.17+htslib-1.17)
+# The command line was: samtools stats normal_WGS.bam
+SN	raw total sequences:	91205340
+SN	filtered sequences:	0
+SN	reads mapped:	89834120
+SN	reads mapped and paired:	88120500
+SN	reads unmapped:	1371220
+SN	reads duplicated:	4012350
+SN	reads MQ0:	856200
+SN	reads QC failed:	0
+SN	reads properly paired:	87923410
+SN	total length:	13771406340
+SN	bases mapped:	13564512120
+SN	bases mapped (cigar):	13254300500
+SN	error rate:	1.9e-03
+SN	average length:	151.0
+SN	average quality:	35.8
+SN	insert size average:	298.2
+SN	insert size standard deviation:	72.1
+SN	pairs on different chromosomes:	312400
+COV	[1-1]	1	980000
+COV	[2-2]	2	2150000
+COV	[5-5]	5	4820000
+COV	[10-10]	10	9150000
+COV	[20-20]	20	14320000
+COV	[30-30]	30	18450000
+COV	[50-50]	50	3210000
+IS	200	132000	128000	2000	2000
+IS	250	305000	298000	3500	3500
+IS	300	365000	358000	3500	3500
+IS	350	310000	303000	3500	3500
+IS	400	118000	115000	1500	1500
+RL	151	91205340
+GCF	20.00	4120000
+GCF	30.00	9230000
+GCF	40.00	27610000
+GCF	50.00	30340000
+GCF	60.00	13430000
+GCF	70.00	6475340
+GCL	20.00	3920000
+GCL	30.00	9030000
+GCL	40.00	27810000
+GCL	50.00	30540000
+GCL	60.00	13230000
+GCL	70.00	6675340
