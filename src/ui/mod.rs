@@ -60,17 +60,16 @@ fn render_splash(frame: &mut Frame, tick: u16, status: &str) {
 
     let subtitle = "Terminal QC Dashboard for Bioinformatics";
 
-    // Spark particles
-    let spark_chars = ['✦', '·', '°', '*', '∘', '⁕', '✧'];
-    let spark_colors = [
-        Color::Rgb(255, 69, 0),   // red-orange
-        Color::Rgb(255, 140, 0),  // dark orange
-        Color::Rgb(255, 165, 0),  // orange
-        Color::Rgb(255, 200, 50), // golden
-        Color::Rgb(255, 220, 100),// light gold
-        Color::Rgb(255, 255, 150),// pale yellow
-        Color::Rgb(200, 200, 200),// fading gray
+    // DNA base colors (bioinformatics standard)
+    let base_colors: [Color; 4] = [
+        Color::Rgb(80, 220, 100),  // A = green
+        Color::Rgb(220, 60, 60),   // T = red
+        Color::Rgb(60, 140, 255),  // G = blue
+        Color::Rgb(255, 180, 40),  // C = yellow/amber
     ];
+    // Glow/background colors
+    let glow_color = Color::Rgb(30, 50, 70);
+    let bg_dot_color = Color::Rgb(50, 40, 70);
 
     let mut lines: Vec<Line> = Vec::new();
 
@@ -99,12 +98,12 @@ fn render_splash(frame: &mut Frame, tick: u16, status: &str) {
             spans.push(Span::styled(
                 visible.to_string(),
                 Style::default()
-                    .fg(Color::Rgb(255, 180, 50))
+                    .fg(Color::Rgb(180, 220, 255))
                     .add_modifier(Modifier::BOLD),
             ));
             spans.push(Span::styled(
                 hidden.to_string(),
-                Style::default().fg(Color::Rgb(40, 40, 40)),
+                Style::default().fg(Color::Rgb(25, 30, 40)),
             ));
             lines.push(Line::from(spans));
         } else if row == logo_start_row + logo.len() + 1 {
@@ -140,36 +139,62 @@ fn render_splash(frame: &mut Frame, tick: u16, status: &str) {
                 ),
             ]));
         } else {
-            // Spark particle rows
+            // DNA helix wave pattern
             let mut spans: Vec<Span> = Vec::new();
             let mut col = 0;
             while col < w {
-                // Deterministic pseudo-random particle placement
-                let hash = (row.wrapping_mul(31).wrapping_add(col.wrapping_mul(17)).wrapping_add(seed.wrapping_mul(7))) % 47;
-                if hash < 3 {
-                    // Place a spark
-                    let char_idx = (hash + seed + row) % spark_chars.len();
-                    let color_idx = if row < h / 2 {
-                        // Upper sparks: fading (higher = more faded)
-                        let dist = (h / 2).saturating_sub(row);
-                        (spark_colors.len() - 1).min(dist / 2)
-                    } else {
-                        // Lower sparks: hot (closer to bottom = hotter)
-                        let dist = row.saturating_sub(h / 2);
-                        spark_colors.len().saturating_sub(1).min(dist / 3)
-                    };
-                    // Animate: some sparks blink based on tick
-                    let visible = (seed + row + col) % 3 != 0;
-                    if visible {
-                        spans.push(Span::styled(
-                            spark_chars[char_idx].to_string(),
-                            Style::default().fg(spark_colors[color_idx]),
-                        ));
+                // Two sine waves offset to create double helix effect
+                let phase1 = ((col as f32 + seed as f32 * 1.5) * 0.15).sin();
+                let phase2 = ((col as f32 + seed as f32 * 1.5 + 3.14) * 0.15).sin();
+                let wave1_row = (h as f32 / 2.0 + phase1 * (h as f32 * 0.3)) as usize;
+                let wave2_row = (h as f32 / 2.0 + phase2 * (h as f32 * 0.3)) as usize;
+
+                let dist1 = (row as isize - wave1_row as isize).unsigned_abs();
+                let dist2 = (row as isize - wave2_row as isize).unsigned_abs();
+                let min_dist = dist1.min(dist2);
+
+                if min_dist == 0 {
+                    // On the helix strand — colored DNA bases
+                    let char_idx = (col + seed) % 4;
+                    let strand_chars = ['A', 'T', 'G', 'C'];
+                    spans.push(Span::styled(
+                        strand_chars[char_idx].to_string(),
+                        Style::default().fg(base_colors[char_idx]).add_modifier(Modifier::BOLD),
+                    ));
+                } else if min_dist <= 1 && dist1 <= 1 && dist2 <= 1 {
+                    // Cross-link between strands (hydrogen bonds)
+                    let link_chars = ['─', '═', '~'];
+                    let ci = (col + seed) % link_chars.len();
+                    spans.push(Span::styled(
+                        link_chars[ci].to_string(),
+                        Style::default().fg(Color::Rgb(200, 170, 80)),
+                    ));
+                } else if min_dist <= 2 {
+                    // Near the helix — faint glow
+                    let glow_chars = ['░', '·', '∘'];
+                    let ci = (row + col + seed) % glow_chars.len();
+                    spans.push(Span::styled(
+                        glow_chars[ci].to_string(),
+                        Style::default().fg(glow_color),
+                    ));
+                } else {
+                    // Background — sparse scattered dots
+                    let hash = (row.wrapping_mul(31).wrapping_add(col.wrapping_mul(17)).wrapping_add(seed.wrapping_mul(7))) % 67;
+                    if hash < 2 {
+                        let bg_chars = ['·', ':', '.'];
+                        let ci = (hash + seed + row) % bg_chars.len();
+                        let visible = (seed + row + col) % 4 != 0;
+                        if visible {
+                            spans.push(Span::styled(
+                                bg_chars[ci].to_string(),
+                                Style::default().fg(bg_dot_color),
+                            ));
+                        } else {
+                            spans.push(Span::raw(" "));
+                        }
                     } else {
                         spans.push(Span::raw(" "));
                     }
-                } else {
-                    spans.push(Span::raw(" "));
                 }
                 col += 1;
             }

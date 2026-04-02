@@ -138,7 +138,7 @@ impl AppState {
                 if self.loading {
                     self.splash_tick = self.splash_tick.wrapping_add(1);
                     // Transition from splash to main UI when ready
-                    if self.splash_tick >= 8 && self.pending_results.is_some() {
+                    if self.splash_tick >= 16 && self.pending_results.is_some() {
                         self.splash_done = true;
                         self.qc_results = self.pending_results.take();
                         self.loading = false;
