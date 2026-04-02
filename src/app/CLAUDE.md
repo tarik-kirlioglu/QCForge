@@ -18,7 +18,7 @@ ui::draw(frame, &app_state)
 - Tüm kullanıcı ve sistem eylemleri tek bir enum'da
 - EventHandler crossterm event'lerini Action'a dönüştürür
 - App.update() Action'ları işler ve state'i günceller
-- Action'lar: Tick, Render, Quit, NextTab, PrevTab, ScrollUp, ScrollDown, NextFile, PrevFile, ToggleHelp, Resize, LoadComplete, Error
+- Action'lar: Tick, Render, Quit, NextTab, PrevTab, ScrollUp, ScrollDown, NextFile, PrevFile, ToggleHelp, CycleSortColumn, ToggleSortDirection, EnterSearchMode, ExitSearchMode, ConfirmSearch, SearchInput(char), SearchBackspace, Resize, LoadComplete, Error
 
 ### `state.rs` — AppState
 - `active_tab: ActiveTab` — hangi tab aktif (default: Overview)
@@ -29,6 +29,16 @@ ui::draw(frame, &app_state)
 - `qc_results: Option<QcResults>` — parse edilmiş veriler
 - Per-tab selection index'leri: `samtools_selected`, `bcftools_selected`, `fastqc_selected`
 - `scroll_offset: u16`
+- `sort_column: SortColumn` — Overview tablosunda aktif sıralama sütunu (File/Tool/Summary/Status)
+- `sort_ascending: bool` — sıralama yönü
+- `search_active: bool` — arama modu açık mı
+- `search_input: String` — anlık arama metni (yazarken)
+- `search_confirmed: String` — onaylanmış filtre (Enter sonrası)
+- `search_active_flag: Arc<AtomicBool>` — EventHandler ile paylaşılan search state
+
+### `state.rs` — SortColumn Enum
+- `File` → `Tool` → `Summary` → `Status` → `File` (cycle)
+- `next()` metodu ile döngüsel geçiş
 
 ### `state.rs` — ActiveTab Enum
 - `Overview` — aggregate dashboard (default açılış tab'ı)
@@ -40,6 +50,8 @@ ui::draw(frame, &app_state)
 - `update(action: Action)` ile state güncellemesi
 - NextFile/PrevFile aktif tab'a göre ilgili selection index'i günceller
 - Overview tab'da NextFile/PrevFile no-op
+- Search action'ları `set_search_active()` ile hem local state hem `Arc<AtomicBool>` günceller
+- CycleSortColumn/ToggleSortDirection sort state'i günceller
 
 ## Kurallar
 

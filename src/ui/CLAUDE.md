@@ -22,7 +22,7 @@ ui/
 
 | Tab | İçerik |
 |-----|--------|
-| Overview | Dosya sayıları, aggregate stats, avg mapping/dup gauge, tüm dosyaların listesi |
+| Overview | Dosya sayıları, aggregate stats, avg mapping/dup gauge, sıralanabilir+filtrelenebilir dosya listesi |
 | samtools | Summary Numbers tablosu + Mapping/Duplication/Properly Paired gauge'ları |
 | bcftools | Summary + Ts/Tv + Substitution Types (inline bar, Ts=cyan Tv=magenta) + InDel Distribution (del=red ins=green) |
 | FastQC | Basic Statistics + Module Status (renkli PASS/WARN/FAIL) + Per Base Quality (bar chart) |
@@ -48,15 +48,21 @@ ui/
 - State UI fonksiyonlarına `&AppState` referansı ile geçirilir, UI fonksiyonları state'i değiştirmez
 - Layout `ratatui::layout::Layout` ile constraint-based yapılır
 - Tab bar'da aktif tab highlight edilir (underlined + bold + cyan)
-- Footer'da keybinding bilgileri gösterilir
+- Footer'da keybinding bilgileri gösterilir; search modu aktifken footer search bar'a dönüşür
+- Overview tab'da `OverviewRow` struct'ı ile dosya listesi oluşturulur, sort → filter → render sırasıyla
+- Aktif sort sütunu header'da `▲`/`▼` göstergesi ile belirtilir
+- Aktif filtre footer'da `[filter: xxx]` ile gösterilir
 - Her tab'da dosya header'ı: `tool: filename [n/total] n:Next p:Prev`
 - Help overlay `?` tuşuyla toggle, centered_rect ile ortaya yerleşir
 
 ## Keybindings
 
-- `q` / `Esc`: Quit
+- `q` / `Esc`: Quit (search modunda Esc filtreyi temizler)
 - `←` / `→` / `Tab`: Tab değiştir
 - `j` / `k` / `↑` / `↓`: Scroll
 - `n` / `p`: Dosyalar arası geçiş
+- `s`: Sort sütununu değiştir (File → Tool → Summary → Status)
+- `S`: Sort yönünü değiştir (asc/desc)
+- `/`: Arama moduna gir (real-time filtreleme, Enter onayla, Esc temizle)
 - `Ctrl+C`: Quit
 - `?`: Help overlay toggle
