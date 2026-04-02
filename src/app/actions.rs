@@ -22,6 +22,7 @@ pub enum Action {
     ScrollLeft,
     ScrollRight,
     Resize(u16, u16),
+    SplashStatus(String),
     LoadComplete(QcResults),
     Error(String),
 }

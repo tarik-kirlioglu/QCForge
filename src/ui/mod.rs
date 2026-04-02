@@ -13,7 +13,7 @@ use crate::app::state::{ActiveTab, AppState};
 pub fn draw(frame: &mut Frame, state: &AppState) {
     // Splash / loading state
     if state.loading {
-        render_splash(frame, state.splash_tick);
+        render_splash(frame, state.splash_tick, &state.splash_status);
         return;
     }
 
@@ -41,7 +41,7 @@ pub fn draw(frame: &mut Frame, state: &AppState) {
     }
 }
 
-fn render_splash(frame: &mut Frame, tick: u16) {
+fn render_splash(frame: &mut Frame, tick: u16, status: &str) {
     let area = frame.area();
     let w = area.width as usize;
     let h = area.height as usize;
@@ -59,7 +59,6 @@ fn render_splash(frame: &mut Frame, tick: u16) {
     ];
 
     let subtitle = "Terminal QC Dashboard for Bioinformatics";
-    let loading_text = "Loading QC data...";
 
     // Spark particles
     let spark_chars = ['✦', '·', '°', '*', '∘', '⁕', '✧'];
@@ -125,7 +124,7 @@ fn render_splash(frame: &mut Frame, tick: u16) {
         } else if row == logo_start_row + logo.len() + 3 {
             // Loading text with animated dots
             let dots = ".".repeat(((tick / 3) % 4) as usize);
-            let lt = format!("{}{}", loading_text.trim_end_matches('.'), dots);
+            let lt = format!("{}{}", status.trim_end_matches('.'), dots);
             let pad = if w > lt.len() {
                 (w - lt.len()) / 2
             } else {

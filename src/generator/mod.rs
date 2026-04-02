@@ -22,9 +22,11 @@ fn check_tool(name: &str) -> Result<()> {
 
 /// Generate stats files from raw BAM/VCF files
 /// Returns paths to newly generated stats files
+/// `on_progress` is called with status messages for each file being processed
 pub fn generate_stats(
     raw_files: &[RawFile],
     output_dir: Option<&Path>,
+    on_progress: impl Fn(&str),
 ) -> Result<Vec<PathBuf>> {
     let mut generated = Vec::new();
     let mut need_samtools = false;
@@ -54,12 +56,12 @@ pub fn generate_stats(
             RawFile::Bam(bam_path) => {
                 let stats_path = make_output_path(bam_path, ".stats", output_dir);
                 if stats_path.exists() {
-                    eprintln!("  [skip] {} (already exists)", stats_path.display());
+                    on_progress(&format!("[skip] {}", stats_path.display()));
                     generated.push(stats_path);
                     continue;
                 }
 
-                eprintln!("  [run]  samtools stats {} ...", bam_path.display());
+                on_progress(&format!("Running samtools stats on {}", bam_path.file_name().unwrap_or_default().to_string_lossy()));
                 let output = Command::new("samtools")
                     .arg("stats")
                     .arg(bam_path)
@@ -76,18 +78,17 @@ pub fn generate_stats(
                 }
 
                 std::fs::write(&stats_path, &output.stdout)?;
-                eprintln!("  [done] {}", stats_path.display());
                 generated.push(stats_path);
             }
             RawFile::Vcf(vcf_path) => {
                 let stats_path = make_output_path(vcf_path, ".vcf.stats", output_dir);
                 if stats_path.exists() {
-                    eprintln!("  [skip] {} (already exists)", stats_path.display());
+                    on_progress(&format!("[skip] {}", stats_path.display()));
                     generated.push(stats_path);
                     continue;
                 }
 
-                eprintln!("  [run]  bcftools stats {} ...", vcf_path.display());
+                on_progress(&format!("Running bcftools stats on {}", vcf_path.file_name().unwrap_or_default().to_string_lossy()));
                 let output = Command::new("bcftools")
                     .arg("stats")
                     .arg(vcf_path)
@@ -104,13 +105,12 @@ pub fn generate_stats(
                 }
 
                 std::fs::write(&stats_path, &output.stdout)?;
-                eprintln!("  [done] {}", stats_path.display());
                 generated.push(stats_path);
             }
             RawFile::Fastq(fq_path) => {
                 let zip_path = make_output_path(fq_path, "_fastqc.zip", output_dir);
                 if zip_path.exists() {
-                    eprintln!("  [skip] {} (already exists)", zip_path.display());
+                    on_progress(&format!("[skip] {}", zip_path.display()));
                     generated.push(zip_path);
                     continue;
                 }
@@ -118,7 +118,7 @@ pub fn generate_stats(
                 let out_dir = output_dir
                     .unwrap_or_else(|| fq_path.parent().unwrap_or(Path::new(".")));
 
-                eprintln!("  [run]  fastqc {} ...", fq_path.display());
+                on_progress(&format!("Running fastqc on {}", fq_path.file_name().unwrap_or_default().to_string_lossy()));
                 let output = Command::new("fastqc")
                     .arg(fq_path)
                     .arg("--outdir")
@@ -136,7 +136,6 @@ pub fn generate_stats(
                     )));
                 }
 
-                eprintln!("  [done] {}", zip_path.display());
                 generated.push(zip_path);
             }
         }

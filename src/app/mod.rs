@@ -118,6 +118,9 @@ impl AppState {
             Action::SearchBackspace => {
                 self.search_input.pop();
             }
+            Action::SplashStatus(msg) => {
+                self.splash_status = msg;
+            }
             Action::LoadComplete(results) => {
                 if self.splash_done {
                     self.qc_results = Some(results);

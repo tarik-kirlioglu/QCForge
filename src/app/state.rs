@@ -145,6 +145,7 @@ pub struct AppState {
     pub thresholds: ThresholdConfig,
     pub splash_tick: u16,
     pub splash_done: bool,
+    pub splash_status: String,
     pub pending_results: Option<QcResults>,
 }
 
@@ -172,6 +173,7 @@ impl AppState {
             summary_selected: 0,
             splash_tick: 0,
             splash_done: false,
+            splash_status: "Loading QC data".to_string(),
             pending_results: None,
             thresholds,
         }

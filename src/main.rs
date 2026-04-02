@@ -41,21 +41,22 @@ async fn main() -> Result<()> {
         ThresholdConfig::default()
     };
 
-    // Generate stats from BAM/VCF if requested
-    if cli.generate {
-        eprintln!("Scanning for BAM/VCF/FASTQ files...");
-        let raw_files = scanner::scan_raw_files(&cli.input_dir, cli.max_depth)?;
-        if raw_files.is_empty() {
-            eprintln!("No BAM/VCF/FASTQ files found in {}", cli.input_dir.display());
-        } else {
-            eprintln!("Found {} BAM/VCF/FASTQ file(s). Generating stats...", raw_files.len());
-            generator::generate_stats(&raw_files, cli.output_dir.as_deref())?;
-            eprintln!("Stats generation complete.\n");
-        }
-    }
-
-    // Export mode: no TUI, just parse and dump
+    // Export mode: no TUI, just parse and dump (generate runs synchronously here)
     if cli.export_json.is_some() || cli.export_csv.is_some() {
+        if cli.generate {
+            eprintln!("Scanning for BAM/VCF/FASTQ files...");
+            let raw_files = scanner::scan_raw_files(&cli.input_dir, cli.max_depth)?;
+            if raw_files.is_empty() {
+                eprintln!("No BAM/VCF/FASTQ files found in {}", cli.input_dir.display());
+            } else {
+                eprintln!("Found {} BAM/VCF/FASTQ file(s). Generating stats...", raw_files.len());
+                generator::generate_stats(&raw_files, cli.output_dir.as_deref(), |msg| {
+                    eprintln!("  {}", msg);
+                })?;
+                eprintln!("Stats generation complete.\n");
+            }
+        }
+
         let results = load_qc_data(&cli.input_dir, cli.max_depth).await?;
 
         if let Some(ref json_path) = cli.export_json {
@@ -106,11 +107,50 @@ async fn main() -> Result<()> {
     // Spawn event handler
     let _event_handler = event::EventHandler::new(action_tx.clone(), search_active_flag.clone());
 
-    // Spawn file loading task
+    // Spawn background task: generate (if requested) + load QC data
     let scan_path = cli.input_dir.clone();
     let max_depth = cli.max_depth;
+    let do_generate = cli.generate;
+    let output_dir = cli.output_dir.clone();
     let tx = action_tx.clone();
     tokio::spawn(async move {
+        // Generate stats if requested
+        if do_generate {
+            let _ = tx.send(Action::SplashStatus("Scanning for BAM/VCF/FASTQ files".to_string()));
+            let scan_path_gen = scan_path.clone();
+            let raw_files = match tokio::task::spawn_blocking(move || {
+                scanner::scan_raw_files(&scan_path_gen, max_depth)
+            }).await {
+                Ok(Ok(files)) => files,
+                Ok(Err(e)) => {
+                    let _ = tx.send(Action::Error(e.to_string()));
+                    return;
+                }
+                Err(e) => {
+                    let _ = tx.send(Action::Error(e.to_string()));
+                    return;
+                }
+            };
+
+            if !raw_files.is_empty() {
+                let _ = tx.send(Action::SplashStatus(
+                    format!("Generating stats ({} files)", raw_files.len()),
+                ));
+                let out_dir = output_dir.clone();
+                let tx_gen = tx.clone();
+                if let Err(e) = tokio::task::spawn_blocking(move || {
+                    generator::generate_stats(&raw_files, out_dir.as_deref(), |msg| {
+                        let _ = tx_gen.send(Action::SplashStatus(msg.to_string()));
+                    })
+                }).await.unwrap_or_else(|e| Err(error::QcForgeError::Terminal(e.to_string()))) {
+                    let _ = tx.send(Action::Error(e.to_string()));
+                    return;
+                }
+            }
+        }
+
+        // Load QC data
+        let _ = tx.send(Action::SplashStatus("Loading QC data".to_string()));
         match load_qc_data(&scan_path, max_depth).await {
             Ok(results) => {
                 let _ = tx.send(Action::LoadComplete(results));
