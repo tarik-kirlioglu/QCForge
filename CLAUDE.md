@@ -87,7 +87,7 @@ src/
 - FastQC zip archives may have varying paths for `*/fastqc_data.txt`; matched using `ends_with`.
 - The `##FastQC` header line starts with `#`, not `>>` — be careful in the section parser.
 - ratatui redraws the entire UI every frame (immediate mode). Keep state separate from UI. `draw()` always takes `&AppState`; state mutation only happens in `update()`.
-- Splash screen: An animated ASCII logo + spark particles are shown at startup. `splash_tick` increments every 250ms (in the `Action::Render` handler); transitions to the main UI after 8 ticks (~2s) + data ready. `pending_results` buffers data until splash finishes. `splash_status` shows dynamic progress messages (e.g. "Running samtools stats on sample.bam").
+- Splash screen: An animated ice-blue ASCII logo + DNA double-helix background with colored bases (A=green, T=red, G=blue, C=amber). `splash_tick` increments every 250ms (in the `Action::Render` handler); transitions to the main UI after 16 ticks (~4s) + data ready. `pending_results` buffers data until splash finishes. `splash_status` shows dynamic progress messages (e.g. "Running samtools stats on sample.bam").
 - crossterm event-stream feature requires futures StreamExt.
 - `--generate` mode skips if stats file / `_fastqc.zip` already exists (idempotent).
 - Generator checks whether samtools/bcftools/fastqc are available in PATH.

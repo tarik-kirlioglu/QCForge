@@ -42,8 +42,14 @@ ui/
 | Deletions | Red | bcftools indel dist (negative length) |
 | Normal text | White | Data display |
 | Secondary | Gray / DarkGray | Comments, descriptions, secondary info |
-| Splash Logo | Rgb(255,180,50) | QCForge ASCII logo (bold, fade-in) |
-| Spark particles | Rgb gradient (red-orange → golden → pale yellow → gray) | Splash background animation |
+| Splash Logo | Rgb(180,220,255) | QCForge ASCII logo (ice-blue, bold, fade-in) |
+| DNA Base A | Rgb(80,220,100) | Green — adenine on helix strands |
+| DNA Base T | Rgb(220,60,60) | Red — thymine on helix strands |
+| DNA Base G | Rgb(60,140,255) | Blue — guanine on helix strands |
+| DNA Base C | Rgb(255,180,40) | Amber — cytosine on helix strands |
+| DNA Cross-links | Rgb(200,170,80) | Golden — hydrogen bonds between strands |
+| Helix Glow | Rgb(30,50,70) | Dark navy — faint glow near helix |
+| Background dots | Rgb(50,40,70) | Dark purple — sparse scattered dots |
 | Splash Loading | Cyan | Dynamic status text with animated dots |
 
 ## Splash Screen
@@ -52,8 +58,7 @@ ui/
 - ASCII QCForge logo appears with a fade-in effect (3 more characters revealed per tick)
 - Subtitle: "Terminal QC Dashboard for Bioinformatics"
 - Dynamic status text from `splash_status` with animated dots (cycles 0-3 dots every 3 ticks)
-- Background: deterministic pseudo-random spark particles (✦·°*∘⁕✧) with tick-based blink animation
-- Color gradient: warm colors (orange/golden) near center, fading gray toward edges
+- Background: animated double-helix wave pattern (two sine waves with pi offset) using colored DNA bases (A/T/G/C), golden cross-links between strands, faint glow near helix, sparse dark dots in background
 - Minimum terminal size: 10x10 (renders empty below that)
 
 ## Layout Rules
