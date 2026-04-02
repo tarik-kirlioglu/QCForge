@@ -143,6 +143,9 @@ pub struct AppState {
     pub summary_horizontal_offset: u16,
     pub summary_selected: usize,
     pub thresholds: ThresholdConfig,
+    pub splash_tick: u16,
+    pub splash_done: bool,
+    pub pending_results: Option<QcResults>,
 }
 
 impl AppState {
@@ -167,6 +170,9 @@ impl AppState {
             summary_sort_column: SummarySortColumn::File,
             summary_horizontal_offset: 0,
             summary_selected: 0,
+            splash_tick: 0,
+            splash_done: false,
+            pending_results: None,
             thresholds,
         }
     }

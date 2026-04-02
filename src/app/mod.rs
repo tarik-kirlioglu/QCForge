@@ -119,14 +119,30 @@ impl AppState {
                 self.search_input.pop();
             }
             Action::LoadComplete(results) => {
-                self.qc_results = Some(results);
-                self.loading = false;
+                if self.splash_done {
+                    self.qc_results = Some(results);
+                    self.loading = false;
+                } else {
+                    // Buffer results until splash finishes
+                    self.pending_results = Some(results);
+                }
             }
             Action::Error(msg) => {
                 self.error_message = Some(msg);
                 self.loading = false;
             }
-            Action::Resize(_, _) | Action::Tick | Action::Render => {}
+            Action::Render => {
+                if self.loading {
+                    self.splash_tick = self.splash_tick.wrapping_add(1);
+                    // Transition from splash to main UI when ready
+                    if self.splash_tick >= 8 && self.pending_results.is_some() {
+                        self.splash_done = true;
+                        self.qc_results = self.pending_results.take();
+                        self.loading = false;
+                    }
+                }
+            }
+            Action::Resize(_, _) | Action::Tick => {}
         }
     }
 }

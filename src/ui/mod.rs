@@ -11,9 +11,9 @@ use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use crate::app::state::{ActiveTab, AppState};
 
 pub fn draw(frame: &mut Frame, state: &AppState) {
-    // Loading state
+    // Splash / loading state
     if state.loading {
-        render_loading(frame);
+        render_splash(frame, state.splash_tick);
         return;
     }
 
@@ -41,24 +41,144 @@ pub fn draw(frame: &mut Frame, state: &AppState) {
     }
 }
 
-fn render_loading(frame: &mut Frame) {
+fn render_splash(frame: &mut Frame, tick: u16) {
     let area = frame.area();
-    let text = Paragraph::new(Line::from(vec![
-        Span::styled(
-            "  Loading QC data...",
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        ),
-    ]))
-    .block(
-        Block::default()
-            .title(" QCForge ")
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Cyan)),
-    );
+    let w = area.width as usize;
+    let h = area.height as usize;
+    if w < 10 || h < 10 {
+        return;
+    }
 
-    frame.render_widget(text, area);
+    let logo = [
+        r"   ___   ____  _____                        ",
+        r"  / _ \ / ___||  ___|___  _ __ __ _  ___    ",
+        r" | | | | |    | |_ / _ \| '__/ _` |/ _ \   ",
+        r" | |_| | |___ |  _| (_) | | | (_| |  __/   ",
+        r"  \__\_\\____||_|  \___/|_|  \__, |\___|   ",
+        r"                             |___/          ",
+    ];
+
+    let subtitle = "Terminal QC Dashboard for Bioinformatics";
+    let loading_text = "Loading QC data...";
+
+    // Spark particles
+    let spark_chars = ['✦', '·', '°', '*', '∘', '⁕', '✧'];
+    let spark_colors = [
+        Color::Rgb(255, 69, 0),   // red-orange
+        Color::Rgb(255, 140, 0),  // dark orange
+        Color::Rgb(255, 165, 0),  // orange
+        Color::Rgb(255, 200, 50), // golden
+        Color::Rgb(255, 220, 100),// light gold
+        Color::Rgb(255, 255, 150),// pale yellow
+        Color::Rgb(200, 200, 200),// fading gray
+    ];
+
+    let mut lines: Vec<Line> = Vec::new();
+
+    // Calculate logo position (centered vertically)
+    let logo_start_row = h / 2 - 5;
+
+    // Simple deterministic "random" based on tick and position
+    let seed = tick as usize;
+
+    for row in 0..h {
+        if row >= logo_start_row && row < logo_start_row + logo.len() {
+            // Logo line
+            let logo_line = logo[row - logo_start_row];
+            let pad = if w > logo_line.len() {
+                (w - logo_line.len()) / 2
+            } else {
+                0
+            };
+
+            // Fade-in effect: reveal chars based on tick
+            let reveal = ((tick as usize) * 3).min(logo_line.len());
+            let visible = &logo_line[..reveal];
+            let hidden = &logo_line[reveal..];
+
+            let mut spans = vec![Span::raw(" ".repeat(pad))];
+            spans.push(Span::styled(
+                visible.to_string(),
+                Style::default()
+                    .fg(Color::Rgb(255, 180, 50))
+                    .add_modifier(Modifier::BOLD),
+            ));
+            spans.push(Span::styled(
+                hidden.to_string(),
+                Style::default().fg(Color::Rgb(40, 40, 40)),
+            ));
+            lines.push(Line::from(spans));
+        } else if row == logo_start_row + logo.len() + 1 {
+            // Subtitle
+            let pad = if w > subtitle.len() {
+                (w - subtitle.len()) / 2
+            } else {
+                0
+            };
+            lines.push(Line::from(vec![
+                Span::raw(" ".repeat(pad)),
+                Span::styled(
+                    subtitle,
+                    Style::default().fg(Color::Rgb(180, 180, 180)),
+                ),
+            ]));
+        } else if row == logo_start_row + logo.len() + 3 {
+            // Loading text with animated dots
+            let dots = ".".repeat(((tick / 3) % 4) as usize);
+            let lt = format!("{}{}", loading_text.trim_end_matches('.'), dots);
+            let pad = if w > lt.len() {
+                (w - lt.len()) / 2
+            } else {
+                0
+            };
+            lines.push(Line::from(vec![
+                Span::raw(" ".repeat(pad)),
+                Span::styled(
+                    lt,
+                    Style::default()
+                        .fg(Color::Cyan)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]));
+        } else {
+            // Spark particle rows
+            let mut spans: Vec<Span> = Vec::new();
+            let mut col = 0;
+            while col < w {
+                // Deterministic pseudo-random particle placement
+                let hash = (row.wrapping_mul(31).wrapping_add(col.wrapping_mul(17)).wrapping_add(seed.wrapping_mul(7))) % 47;
+                if hash < 3 {
+                    // Place a spark
+                    let char_idx = (hash + seed + row) % spark_chars.len();
+                    let color_idx = if row < h / 2 {
+                        // Upper sparks: fading (higher = more faded)
+                        let dist = (h / 2).saturating_sub(row);
+                        (spark_colors.len() - 1).min(dist / 2)
+                    } else {
+                        // Lower sparks: hot (closer to bottom = hotter)
+                        let dist = row.saturating_sub(h / 2);
+                        spark_colors.len().saturating_sub(1).min(dist / 3)
+                    };
+                    // Animate: some sparks blink based on tick
+                    let visible = (seed + row + col) % 3 != 0;
+                    if visible {
+                        spans.push(Span::styled(
+                            spark_chars[char_idx].to_string(),
+                            Style::default().fg(spark_colors[color_idx]),
+                        ));
+                    } else {
+                        spans.push(Span::raw(" "));
+                    }
+                } else {
+                    spans.push(Span::raw(" "));
+                }
+                col += 1;
+            }
+            lines.push(Line::from(spans));
+        }
+    }
+
+    frame.render_widget(Paragraph::new(lines), area);
 }
 
 fn render_error(frame: &mut Frame, error: &str) {
