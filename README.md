@@ -16,6 +16,7 @@ Built with Rust using [ratatui](https://github.com/ratatui/ratatui) + [crossterm
 - **CSV/TSV export** — Export flat summary table as CSV or TSV (`--export-csv`, auto-detects `.tsv` for tab-delimited)
 - **Sortable overview** — Sort the file list by any column with `s`/`S` keys
 - **Search & filter** — Filter files by name with `/` key, real-time filtering as you type
+- **Animated splash screen** — ASCII logo with fade-in effect and spark particle animation during loading
 - **Async & responsive** — Non-blocking file loading with tokio, TUI stays responsive during parsing
 
 ## Installation

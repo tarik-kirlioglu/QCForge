@@ -24,7 +24,7 @@ ui::draw(frame, &app_state)
 - `active_tab: ActiveTab` — hangi tab aktif (default: Overview)
 - `should_quit: bool` — çıkış flag'i
 - `show_help: bool` — help overlay
-- `loading: bool` — dosyalar yüklenirken true
+- `loading: bool` — dosyalar yüklenirken true (splash screen gösterilir)
 - `error_message: Option<String>` — hata mesajı
 - `qc_results: Option<QcResults>` — parse edilmiş veriler
 - Per-tab selection index'leri: `samtools_selected`, `bcftools_selected`, `fastqc_selected`
@@ -35,6 +35,9 @@ ui::draw(frame, &app_state)
 - `search_input: String` — anlık arama metni (yazarken)
 - `search_confirmed: String` — onaylanmış filtre (Enter sonrası)
 - `search_active_flag: Arc<AtomicBool>` — EventHandler ile paylaşılan search state
+- `splash_tick: u16` — splash animasyon tick sayacı (250ms aralıkla artırılır)
+- `splash_done: bool` — splash tamamlandı mı
+- `pending_results: Option<QcResults>` — splash bitmeden gelen veriler burada buffer'lanır
 
 ### `state.rs` — SortColumn Enum
 - `File` → `Tool` → `Summary` → `Status` → `File` (cycle, Overview tab için)
@@ -60,6 +63,8 @@ ui::draw(frame, &app_state)
 - ScrollLeft/ScrollRight sadece Summary tab'da `summary_horizontal_offset` günceller
 - NextFile/PrevFile Summary tab'da `summary_selected` günceller
 - `thresholds: ThresholdConfig` — QC eşik kuralları (TOML'dan yüklenebilir veya default)
+- `Action::Render` handler'ı: loading sırasında `splash_tick` artırır, 8 tick + veri hazır olunca `pending_results`'ı `qc_results`'a taşıyıp `loading=false` yapar
+- `Action::LoadComplete`: splash bitmemişse veriyi `pending_results`'a buffer'lar, bitmişse direkt `qc_results`'a atar
 
 ## Kurallar
 

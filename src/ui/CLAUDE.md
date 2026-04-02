@@ -1,12 +1,12 @@
 # UI Module
 
-ratatui ile terminal render katmanı. 4 tab, help overlay, loading/error state'leri.
+ratatui ile terminal render katmanı. 5 tab, splash screen, help overlay, loading/error state'leri.
 
 ## Yapı
 
 ```
 ui/
-├── mod.rs        # Root render fn: draw(frame, app_state) + loading/error/help overlay
+├── mod.rs        # Root render fn: draw(frame, &app_state) + splash screen + loading/error/help overlay
 ├── layout.rs     # Header, tab bar, content area, footer layout bölümleri
 ├── tabs/
 │   ├── overview.rs   # Tüm QC verilerinin özet dashboard'u (dosya listesi, aggregate stats, gauge'lar)
@@ -42,6 +42,19 @@ ui/
 | Deletions | Red | bcftools indel dist (negatif length) |
 | Normal text | White | Veri gösterimi |
 | Secondary | Gray / DarkGray | Yorum, açıklama, ikincil bilgi |
+| Splash Logo | Rgb(255,180,50) | QCForge ASCII logo (bold, fade-in) |
+| Spark particles | Rgb gradient (red-orange → golden → pale yellow → gray) | Splash arka plan animasyonu |
+| Splash Loading | Cyan | "Loading QC data..." animated dots |
+
+## Splash Screen
+
+- `render_splash(frame, tick)` fonksiyonu ile çizilir
+- ASCII QCForge logo'su fade-in efektiyle beliriyor (her tick'de 3 karakter daha görünür)
+- Subtitle: "Terminal QC Dashboard for Bioinformatics"
+- Animated loading dots: `Loading QC data` → `Loading QC data.` → `Loading QC data..` → `Loading QC data...`
+- Arka plan: deterministic pseudo-random spark partikülleri (✦·°*∘⁕✧), tick bazlı blink animasyonu
+- Renk gradyanı: merkeze yakın sıcak renkler (orange/golden), kenarlara doğru fading gray
+- Min terminal boyutu: 10x10 (altında boş render)
 
 ## Layout Kuralları
 

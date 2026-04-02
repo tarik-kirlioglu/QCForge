@@ -86,7 +86,8 @@ src/
 - bcftools stats DP section'ında bin değerleri string olabilir (`>500` gibi). `DpEntry.bin` tipi `String`.
 - FastQC zip arşivleri içinde `*/fastqc_data.txt` yolu değişkenlik gösterebilir, `ends_with` ile aranır.
 - `##FastQC` header satırı `>>` ile başlamaz, `#` ile başlar — section parser'da dikkat.
-- ratatui her frame'de tüm UI'ı yeniden çizer (immediate mode). State'i UI'dan ayır.
+- ratatui her frame'de tüm UI'ı yeniden çizer (immediate mode). State'i UI'dan ayır. `draw()` her zaman `&AppState` alır, state mutasyonu sadece `update()` içinde yapılır.
+- Splash screen: Başlangıçta animasyonlu ASCII logo + spark partikülleri gösterilir. `splash_tick` 250ms tick ile artırılır (`Action::Render` handler'ında), 8 tick (~2sn) + veri hazır olunca ana UI'a geçilir. `pending_results` ile veri splash bitene kadar buffer'lanır.
 - crossterm event-stream feature'ı futures StreamExt gerektirir.
 - `--generate` modu stats dosyası / `_fastqc.zip` zaten varsa skip eder (idempotent).
 - Generator, samtools/bcftools/fastqc'nin PATH'de olup olmadığını kontrol eder.
