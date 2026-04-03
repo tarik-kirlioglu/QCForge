@@ -43,13 +43,12 @@ ui/
 | Normal text | White | Data display |
 | Secondary | Gray / DarkGray | Comments, descriptions, secondary info |
 | Splash Logo | Rgb(180,220,255) | QCForge ASCII logo (ice-blue, bold, fade-in) |
-| DNA Base A | Rgb(80,220,100) | Green — adenine on helix strands |
-| DNA Base T | Rgb(220,60,60) | Red — thymine on helix strands |
-| DNA Base G | Rgb(60,140,255) | Blue — guanine on helix strands |
-| DNA Base C | Rgb(255,180,40) | Amber — cytosine on helix strands |
-| DNA Cross-links | Rgb(200,170,80) | Golden — hydrogen bonds between strands |
-| Helix Glow | Rgb(30,50,70) | Dark navy — faint glow near helix |
-| Background dots | Rgb(50,40,70) | Dark purple — sparse scattered dots |
+| DNA Base A (lit) | Rgb(80,220,100) | Green — adenine, bright in spiral wave |
+| DNA Base T (lit) | Rgb(220,60,60) | Red — thymine, bright in spiral wave |
+| DNA Base G (lit) | Rgb(60,140,255) | Blue — guanine, bright in spiral wave |
+| DNA Base C (lit) | Rgb(255,180,40) | Amber — cytosine, bright in spiral wave |
+| DNA Base (mid) | Rgb(25,65,30) etc. | Mid-dark tints of each base color |
+| DNA Base (dim) | Rgb(10,25,12) etc. | Near-black tints of each base color |
 | Splash Loading | Cyan | Dynamic status text with animated dots |
 
 ## Splash Screen
@@ -58,7 +57,8 @@ ui/
 - ASCII QCForge logo appears with a fade-in effect (3 more characters revealed per tick)
 - Subtitle: "Terminal QC Dashboard for Bioinformatics"
 - Dynamic status text from `splash_status` with animated dots (cycles 0-3 dots every 3 ticks)
-- Background: animated double-helix wave pattern (two sine waves with pi offset) using colored DNA bases (A/T/G/C), golden cross-links between strands, faint glow near helix, sparse dark dots in background
+- Background: entire terminal filled with A/T/G/C letters. Letter positions are FIXED (deterministic hash of row,col). Animation uses the original double-helix sine wave pattern (two sine waves with pi offset) — letters on the helix strands are lit (bright base color + bold), between strands get hydrogen bond color, near helix get mid tint, and far from helix are dim (near-black tint). The helix slides as tick increments.
+- Logo/subtitle/status text overlaid on top of the base letter grid
 - Minimum terminal size: 10x10 (renders empty below that)
 
 ## Layout Rules
