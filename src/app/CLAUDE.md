@@ -35,7 +35,7 @@ ui::draw(frame, &app_state)
 - `search_input: String` — current search text (while typing)
 - `search_confirmed: String` — confirmed filter (after Enter)
 - `search_active_flag: Arc<AtomicBool>` — search state shared with EventHandler
-- `splash_tick: u16` — splash animation tick counter (incremented every 250ms)
+- `splash_tick: u16` — splash animation tick counter (incremented every 200ms)
 - `splash_done: bool` — whether splash has completed
 - `splash_status: String` — status message displayed on splash screen
 - `pending_results: Option<QcResults>` — data received before splash finishes is buffered here
@@ -66,7 +66,7 @@ ui::draw(frame, &app_state)
 - NextFile/PrevFile updates `summary_selected` in the Summary tab
 - `thresholds: ThresholdConfig` — QC threshold rules (loadable from TOML or default)
 - `Action::SplashStatus` handler: updates `splash_status` message
-- `Action::Render` handler: increments `splash_tick` during loading; transitions `pending_results` to `qc_results` and sets `loading=false` after 8 ticks + data ready
+- `Action::Render` handler: increments `splash_tick` during loading; transitions `pending_results` to `qc_results` and sets `loading=false` after 32 ticks + data ready
 - `Action::LoadComplete`: buffers data to `pending_results` if splash hasn't finished; otherwise sets `qc_results` directly
 
 ## Rules
