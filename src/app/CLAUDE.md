@@ -66,7 +66,7 @@ ui::draw(frame, &app_state)
 - NextFile/PrevFile updates `summary_selected` in the Summary tab
 - `thresholds: ThresholdConfig` — QC threshold rules (loadable from TOML or default)
 - `Action::SplashStatus` handler: updates `splash_status` message
-- `Action::Render` handler: increments `splash_tick` during loading; transitions `pending_results` to `qc_results` and sets `loading=false` after 32 ticks + data ready
+- `Action::Render` handler: increments `splash_tick` during loading; transitions `pending_results` to `qc_results` and sets `loading=false` after 16 ticks + data ready
 - `Action::LoadComplete`: buffers data to `pending_results` if splash hasn't finished; otherwise sets `qc_results` directly
 
 ## Rules
