@@ -19,7 +19,7 @@ impl EventHandler {
     pub fn new(tx: UnboundedSender<Action>, search_active: Arc<AtomicBool>) -> Self {
         let task = tokio::spawn(async move {
             let mut reader = EventStream::new();
-            let mut tick_interval = tokio::time::interval(Duration::from_millis(200));
+            let mut tick_interval = tokio::time::interval(Duration::from_millis(250));
 
             loop {
                 tokio::select! {
