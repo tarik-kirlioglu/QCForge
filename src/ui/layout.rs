@@ -42,7 +42,7 @@ fn render_header(frame: &mut Frame, area: Rect, state: &AppState) {
 
     let header = Line::from(vec![
         Span::styled(
-            " QCForge v0.1.0 ",
+            format!(" QCForge v{} ", env!("CARGO_PKG_VERSION")),
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
