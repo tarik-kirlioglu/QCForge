@@ -1,6 +1,6 @@
 [package]
 name = "qcforge"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 description = "A TUI bioinformatics QC dashboard for FastQC, samtools, and bcftools"
 license = "MIT"
