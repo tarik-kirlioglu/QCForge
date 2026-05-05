@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -5,9 +7,12 @@ use ratatui::widgets::{Block, Borders, Cell, Paragraph, Row, Table};
 use ratatui::Frame;
 
 use crate::app::state::AppState;
+use crate::metadata::{derive_sample_id, SampleMetadata};
 use crate::parser::types::QcResults;
 use crate::threshold::{QcLevel, ThresholdConfig};
 use crate::ui::widgets::table as table_style;
+
+const UNGROUPED: &str = "Ungrouped";
 
 const MIN_SAMPLES: usize = 5;
 const AXIS_LABEL_WIDTH: u16 = 14;
@@ -76,6 +81,7 @@ pub struct Outlier {
     pub deviation_magnitude: f64,
     pub direction: OutlierDirection,
     pub threshold_fail: bool,
+    pub group_label: Option<String>,
 }
 
 /// Linear-interpolation quartile (numpy default / "Type 7").
@@ -130,6 +136,7 @@ pub fn detect_outliers(
     points: &[CohortDataPoint],
     stats: &BoxStats,
     metric: CohortMetric,
+    group_label: Option<&str>,
 ) -> Vec<Outlier> {
     let mut out = Vec::new();
     for p in points {
@@ -141,6 +148,7 @@ pub fn detect_outliers(
                 deviation_magnitude: stats.lower_fence - p.value,
                 direction: OutlierDirection::Below,
                 threshold_fail: p.threshold_fail,
+                group_label: group_label.map(|s| s.to_string()),
             });
         } else if p.value > stats.upper_fence {
             out.push(Outlier {
@@ -150,10 +158,46 @@ pub fn detect_outliers(
                 deviation_magnitude: p.value - stats.upper_fence,
                 direction: OutlierDirection::Above,
                 threshold_fail: p.threshold_fail,
+                group_label: group_label.map(|s| s.to_string()),
             });
         }
     }
     out
+}
+
+/// Partition cohort data points by metadata-derived group value.
+///
+/// Returns groups in stable insertion order (first occurrence wins). Samples
+/// whose `derive_sample_id(filename)` is missing from the metadata or has an
+/// empty value for the active dimension fall into the `Ungrouped` bucket.
+pub fn partition_by_group(
+    points: &[CohortDataPoint],
+    metadata: &SampleMetadata,
+    dimension: &str,
+) -> Vec<(String, Vec<CohortDataPoint>)> {
+    let mut order: Vec<String> = Vec::new();
+    let mut buckets: HashMap<String, Vec<CohortDataPoint>> = HashMap::new();
+
+    for p in points {
+        let sample_id = derive_sample_id(&p.filename);
+        let group = metadata
+            .group_for(&sample_id, dimension)
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| UNGROUPED.to_string());
+
+        if !order.contains(&group) {
+            order.push(group.clone());
+        }
+        buckets.entry(group).or_default().push(p.clone());
+    }
+
+    order
+        .into_iter()
+        .map(|g| {
+            let v = buckets.remove(&g).unwrap_or_default();
+            (g, v)
+        })
+        .collect()
 }
 
 pub fn build_cohort_data(
@@ -227,25 +271,68 @@ fn file_label(path: &std::path::Path) -> String {
         .unwrap_or_default()
 }
 
-fn collect_outliers(
+/// One row in the boxplot panel — a metric optionally scoped to a group.
+#[derive(Debug, Clone)]
+struct CohortRow {
+    metric: CohortMetric,
+    group_label: Option<String>,
+    points: Vec<CohortDataPoint>,
+    stats: Option<BoxStats>,
+}
+
+fn build_cohort_rows(
     cohort: &[(CohortMetric, Vec<CohortDataPoint>)],
-) -> (Vec<Outlier>, Vec<(CohortMetric, Option<BoxStats>)>) {
-    let mut all = Vec::new();
-    let mut stats_per_metric = Vec::with_capacity(cohort.len());
+    metadata: Option<&SampleMetadata>,
+    active_dim: Option<&str>,
+) -> Vec<CohortRow> {
+    let mut rows = Vec::new();
     for (metric, points) in cohort {
-        let values: Vec<f64> = points.iter().map(|p| p.value).collect();
-        let stats = compute_box_stats(&values);
-        if let Some(s) = stats {
-            all.extend(detect_outliers(points, &s, *metric));
+        match (metadata, active_dim) {
+            (Some(md), Some(dim)) => {
+                for (label, group_points) in partition_by_group(points, md, dim) {
+                    let values: Vec<f64> = group_points.iter().map(|p| p.value).collect();
+                    let stats = compute_box_stats(&values);
+                    rows.push(CohortRow {
+                        metric: *metric,
+                        group_label: Some(label),
+                        points: group_points,
+                        stats,
+                    });
+                }
+            }
+            _ => {
+                let values: Vec<f64> = points.iter().map(|p| p.value).collect();
+                let stats = compute_box_stats(&values);
+                rows.push(CohortRow {
+                    metric: *metric,
+                    group_label: None,
+                    points: points.clone(),
+                    stats,
+                });
+            }
         }
-        stats_per_metric.push((*metric, stats));
+    }
+    rows
+}
+
+fn collect_all_outliers(rows: &[CohortRow]) -> Vec<Outlier> {
+    let mut all = Vec::new();
+    for row in rows {
+        if let Some(stats) = &row.stats {
+            all.extend(detect_outliers(
+                &row.points,
+                stats,
+                row.metric,
+                row.group_label.as_deref(),
+            ));
+        }
     }
     all.sort_by(|a, b| {
         b.deviation_magnitude
             .partial_cmp(&a.deviation_magnitude)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
-    (all, stats_per_metric)
+    all
 }
 
 pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
@@ -255,10 +342,12 @@ pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
     };
 
     let cohort = build_cohort_data(results, &state.thresholds);
-    let total_points: usize = cohort.iter().map(|(_, v)| v.len()).sum();
-    let any_metric_qualifies = cohort.iter().any(|(_, v)| v.len() >= MIN_SAMPLES);
+    let active_dim = state.active_group_dim.as_deref();
+    let rows = build_cohort_rows(&cohort, state.metadata.as_ref(), active_dim);
 
-    if !any_metric_qualifies {
+    let any_qualifies = rows.iter().any(|r| r.stats.is_some());
+    if !any_qualifies {
+        let total_points: usize = cohort.iter().map(|(_, v)| v.len()).sum();
         let msg = format!(
             "Cohort analysis requires \u{2265}{} samples per metric (current totals across metrics: {}).",
             MIN_SAMPLES, total_points
@@ -277,27 +366,50 @@ pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
         return;
     }
 
-    let (outliers, stats_per_metric) = collect_outliers(&cohort);
+    let outliers = collect_all_outliers(&rows);
 
-    // Top: 5 metric rows with one blank spacer between each (5 rows + 4 spacers = 9 inner)
-    // + 2 borders = 11 total height for the block.
+    // Without grouping: 5 metric rows + 4 spacers + 2 borders = 11 lines (current behavior).
+    // With grouping: row count is variable, so split the area 50/50 and let the boxplot
+    // panel scroll vertically via boxplot_scroll_offset.
+    let constraints = if active_dim.is_none() {
+        [Constraint::Length(11), Constraint::Min(0)]
+    } else {
+        [Constraint::Percentage(50), Constraint::Percentage(50)]
+    };
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(11), Constraint::Min(0)])
+        .constraints(constraints)
         .split(area);
 
-    render_boxplots(frame, chunks[0], &cohort, &stats_per_metric);
-    render_outlier_table(frame, chunks[1], &outliers, state.cohort_selected);
+    render_boxplots(
+        frame,
+        chunks[0],
+        &rows,
+        active_dim,
+        state.boxplot_scroll_offset,
+    );
+    render_outlier_table(
+        frame,
+        chunks[1],
+        &outliers,
+        state.cohort_selected,
+        active_dim.is_some(),
+    );
 }
 
 fn render_boxplots(
     frame: &mut Frame,
     area: Rect,
-    cohort: &[(CohortMetric, Vec<CohortDataPoint>)],
-    stats_per_metric: &[(CohortMetric, Option<BoxStats>)],
+    rows: &[CohortRow],
+    active_dim: Option<&str>,
+    scroll_offset: u16,
 ) {
+    let title = match active_dim {
+        Some(dim) => format!(" Cohort [grouped by: {}] ", dim),
+        None => " Cohort distribution (IQR boxplot) ".to_string(),
+    };
     let block = Block::default()
-        .title(" Cohort distribution (IQR boxplot) ")
+        .title(title)
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
     let inner = block.inner(area);
@@ -322,45 +434,47 @@ fn render_boxplots(
         .saturating_sub(AXIS_OUTLIER_TAIL_WIDTH);
     let axis_width = axis_width.max(15);
 
-    for (i, (metric, points)) in cohort.iter().enumerate() {
-        if i > 0 {
-            lines.push(Line::from(""));
+    let mut prev_metric: Option<CohortMetric> = None;
+    for row in rows {
+        // Insert one blank spacer between distinct metrics, but NOT between
+        // sibling group rows of the same metric.
+        if let Some(prev) = prev_metric {
+            if prev != row.metric {
+                lines.push(Line::from(""));
+            }
         }
+        prev_metric = Some(row.metric);
 
-        let stats = stats_per_metric
-            .iter()
-            .find(|(m, _)| m == metric)
-            .and_then(|(_, s)| s.as_ref());
-
+        let label = match &row.group_label {
+            Some(g) => format!("{} [{}]", row.metric.label(), g),
+            None => row.metric.label().to_string(),
+        };
         let label_span = Span::styled(
-            format!(
-                "{:width$}",
-                metric.label(),
-                width = AXIS_LABEL_WIDTH as usize
-            ),
+            format!("{:width$}", label, width = AXIS_LABEL_WIDTH as usize),
             Style::default()
                 .fg(Color::White)
                 .add_modifier(Modifier::BOLD),
         );
 
-        match stats {
+        match &row.stats {
             Some(s) => {
-                let line = build_boxplot_line(*metric, points, s, axis_width, label_span);
+                let line = build_boxplot_line(row.metric, &row.points, s, axis_width, label_span);
                 lines.push(line);
             }
             None => {
-                let n = points.len();
+                let n = row.points.len();
                 let warn = format!("n={} \u{2014} too small (need \u{2265}{})", n, MIN_SAMPLES);
-                let line = Line::from(vec![
+                lines.push(Line::from(vec![
                     label_span,
                     Span::styled(warn, Style::default().fg(Color::DarkGray)),
-                ]);
-                lines.push(line);
+                ]));
             }
         }
     }
 
-    let p = Paragraph::new(lines);
+    let max_scroll = lines.len().saturating_sub(inner.height as usize) as u16;
+    let scroll = scroll_offset.min(max_scroll);
+    let p = Paragraph::new(lines).scroll((scroll, 0));
     frame.render_widget(p, inner);
 }
 
@@ -494,7 +608,13 @@ fn truncate(s: &str, max: usize) -> String {
     }
 }
 
-fn render_outlier_table(frame: &mut Frame, area: Rect, outliers: &[Outlier], selected: usize) {
+fn render_outlier_table(
+    frame: &mut Frame,
+    area: Rect,
+    outliers: &[Outlier],
+    selected: usize,
+    show_group_column: bool,
+) {
     let title = format!(" Outliers ({}) ", outliers.len());
     let block = Block::default()
         .title(title)
@@ -511,15 +631,18 @@ fn render_outlier_table(frame: &mut Frame, area: Rect, outliers: &[Outlier], sel
         return;
     }
 
-    let header = Row::new(vec![
-        Cell::from("Sample").style(table_style::header_style()),
-        Cell::from("Metric").style(table_style::header_style()),
-        Cell::from("Value").style(table_style::header_style()),
-        Cell::from("Fence").style(table_style::header_style()),
-        Cell::from("\u{0394}").style(table_style::header_style()),
-        Cell::from("Side").style(table_style::header_style()),
-        Cell::from("Threshold").style(table_style::header_style()),
-    ]);
+    let mut header_cells: Vec<Cell> = Vec::new();
+    header_cells.push(Cell::from("Sample").style(table_style::header_style()));
+    if show_group_column {
+        header_cells.push(Cell::from("Group").style(table_style::header_style()));
+    }
+    header_cells.push(Cell::from("Metric").style(table_style::header_style()));
+    header_cells.push(Cell::from("Value").style(table_style::header_style()));
+    header_cells.push(Cell::from("Fence").style(table_style::header_style()));
+    header_cells.push(Cell::from("\u{0394}").style(table_style::header_style()));
+    header_cells.push(Cell::from("Side").style(table_style::header_style()));
+    header_cells.push(Cell::from("Threshold").style(table_style::header_style()));
+    let header = Row::new(header_cells);
 
     let max = outliers.len().saturating_sub(1);
     let clamped_selected = selected.min(max);
@@ -547,31 +670,55 @@ fn render_outlier_table(frame: &mut Frame, area: Rect, outliers: &[Outlier], sel
                 OutlierDirection::Above => "Above",
             };
 
-            Row::new(vec![
-                Cell::from(o.filename.clone()).style(base),
-                Cell::from(o.metric.label()).style(base),
-                Cell::from(o.metric.format_value(o.value)).style(base),
-                Cell::from(o.metric.format_value(fence_value(o))).style(base),
-                Cell::from(o.metric.format_value(o.deviation_magnitude)).style(base),
-                Cell::from(side).style(base),
+            let mut cells: Vec<Cell> = Vec::new();
+            cells.push(Cell::from(o.filename.clone()).style(base));
+            if show_group_column {
+                let g = o
+                    .group_label
+                    .clone()
+                    .unwrap_or_else(|| UNGROUPED.to_string());
+                cells.push(Cell::from(g).style(base));
+            }
+            cells.push(Cell::from(o.metric.label()).style(base));
+            cells.push(Cell::from(o.metric.format_value(o.value)).style(base));
+            cells.push(Cell::from(o.metric.format_value(fence_value(o))).style(base));
+            cells.push(Cell::from(o.metric.format_value(o.deviation_magnitude)).style(base));
+            cells.push(Cell::from(side).style(base));
+            cells.push(
                 Cell::from(threshold_text)
                     .style(base.fg(threshold_color).add_modifier(Modifier::BOLD)),
-            ])
+            );
+            Row::new(cells)
         })
         .collect();
 
-    let widths = [
-        Constraint::Percentage(28),
-        Constraint::Length(12),
-        Constraint::Length(10),
-        Constraint::Length(10),
-        Constraint::Length(8),
-        Constraint::Length(7),
-        Constraint::Length(10),
-    ];
+    let widths: Vec<Constraint> = if show_group_column {
+        vec![
+            Constraint::Percentage(24),
+            Constraint::Length(12),
+            Constraint::Length(12),
+            Constraint::Length(10),
+            Constraint::Length(10),
+            Constraint::Length(8),
+            Constraint::Length(7),
+            Constraint::Length(10),
+        ]
+    } else {
+        vec![
+            Constraint::Percentage(28),
+            Constraint::Length(12),
+            Constraint::Length(10),
+            Constraint::Length(10),
+            Constraint::Length(8),
+            Constraint::Length(7),
+            Constraint::Length(10),
+        ]
+    };
 
+    let mut ts = ratatui::widgets::TableState::default();
+    ts.select(Some(clamped_selected));
     let table = Table::new(rows, widths).header(header).block(block);
-    frame.render_widget(table, area);
+    frame.render_stateful_widget(table, area, &mut ts);
 }
 
 fn fence_value(o: &Outlier) -> f64 {
@@ -624,11 +771,12 @@ mod tests {
             .collect();
         let values: Vec<f64> = points.iter().map(|p| p.value).collect();
         let stats = compute_box_stats(&values).unwrap();
-        let outliers = detect_outliers(&points, &stats, CohortMetric::DuplicationRate);
+        let outliers = detect_outliers(&points, &stats, CohortMetric::DuplicationRate, None);
         assert_eq!(outliers.len(), 1);
         assert_eq!(outliers[0].filename, "extreme");
         assert_eq!(outliers[0].direction, OutlierDirection::Above);
         assert!(outliers[0].threshold_fail);
+        assert!(outliers[0].group_label.is_none());
     }
 
     fn make_results(samtools_count: usize) -> QcResults {
@@ -739,11 +887,73 @@ mod tests {
             .1;
         let values: Vec<f64> = mapping.iter().map(|p| p.value).collect();
         let stats = compute_box_stats(&values).unwrap();
-        let outliers = detect_outliers(mapping, &stats, CohortMetric::MappingRate);
+        let outliers = detect_outliers(mapping, &stats, CohortMetric::MappingRate, None);
 
         // sample0 (60%) is far below the 95%-cluster fence
         assert_eq!(outliers.len(), 1);
         assert_eq!(outliers[0].direction, OutlierDirection::Below);
         assert!(outliers[0].threshold_fail);
+    }
+
+    #[test]
+    fn test_partition_by_group() {
+        let metadata = SampleMetadata::load_from_reader(
+            std::io::Cursor::new("sample_id\tpanel\nA\tWES\nB\tWGS\nC\tWES\nD\tWGS\n"),
+            "<test>",
+        )
+        .unwrap();
+        let points = vec![
+            CohortDataPoint {
+                filename: "A.stats".into(),
+                value: 1.0,
+                threshold_fail: false,
+            },
+            CohortDataPoint {
+                filename: "B.stats".into(),
+                value: 2.0,
+                threshold_fail: false,
+            },
+            CohortDataPoint {
+                filename: "C.stats".into(),
+                value: 3.0,
+                threshold_fail: false,
+            },
+            CohortDataPoint {
+                filename: "D.stats".into(),
+                value: 4.0,
+                threshold_fail: false,
+            },
+        ];
+        let groups = partition_by_group(&points, &metadata, "panel");
+        assert_eq!(groups.len(), 2);
+        let wes = groups.iter().find(|(g, _)| g == "WES").unwrap();
+        assert_eq!(wes.1.len(), 2);
+        let wgs = groups.iter().find(|(g, _)| g == "WGS").unwrap();
+        assert_eq!(wgs.1.len(), 2);
+    }
+
+    #[test]
+    fn test_partition_ungrouped_bucket() {
+        let metadata = SampleMetadata::load_from_reader(
+            std::io::Cursor::new("sample_id\tpanel\nA\tWES\n"),
+            "<test>",
+        )
+        .unwrap();
+        let points = vec![
+            CohortDataPoint {
+                filename: "A.stats".into(),
+                value: 1.0,
+                threshold_fail: false,
+            },
+            CohortDataPoint {
+                filename: "unknown.stats".into(),
+                value: 2.0,
+                threshold_fail: false,
+            },
+        ];
+        let groups = partition_by_group(&points, &metadata, "panel");
+        let ungrouped = groups.iter().find(|(g, _)| g == UNGROUPED).unwrap();
+        assert_eq!(ungrouped.1.len(), 1);
+        assert_eq!(ungrouped.1[0].filename, "unknown.stats");
     }
 }

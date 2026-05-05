@@ -2,11 +2,11 @@ pub mod layout;
 pub mod tabs;
 pub mod widgets;
 
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
 
 use crate::app::state::{ActiveTab, AppState};
 
@@ -65,26 +65,26 @@ fn render_splash(frame: &mut Frame, tick: u16, status: &str) {
 
     // DNA base colors (bioinformatics standard)
     let base_colors: [Color; 4] = [
-        Color::Rgb(80, 220, 100),  // A = green
-        Color::Rgb(220, 60, 60),   // T = red
-        Color::Rgb(60, 140, 255),  // G = blue
-        Color::Rgb(255, 180, 40),  // C = yellow/amber
+        Color::Rgb(80, 220, 100), // A = green
+        Color::Rgb(220, 60, 60),  // T = red
+        Color::Rgb(60, 140, 255), // G = blue
+        Color::Rgb(255, 180, 40), // C = yellow/amber
     ];
 
     // Mid-brightness tints
     let mid_colors: [Color; 4] = [
-        Color::Rgb(25, 65, 30),   // A
-        Color::Rgb(65, 18, 18),   // T
-        Color::Rgb(18, 40, 75),   // G
-        Color::Rgb(75, 55, 12),   // C
+        Color::Rgb(25, 65, 30), // A
+        Color::Rgb(65, 18, 18), // T
+        Color::Rgb(18, 40, 75), // G
+        Color::Rgb(75, 55, 12), // C
     ];
 
     // Dim near-black tints
     let dim_colors: [Color; 4] = [
-        Color::Rgb(10, 25, 12),   // A
-        Color::Rgb(25, 8, 8),     // T
-        Color::Rgb(8, 15, 30),    // G
-        Color::Rgb(30, 22, 5),    // C
+        Color::Rgb(10, 25, 12), // A
+        Color::Rgb(25, 8, 8),   // T
+        Color::Rgb(8, 15, 30),  // G
+        Color::Rgb(30, 22, 5),  // C
     ];
 
     // Cross-link color (hydrogen bonds between strands)
@@ -141,10 +141,7 @@ fn render_splash(frame: &mut Frame, tick: u16, status: &str) {
             if bold {
                 style = style.add_modifier(Modifier::BOLD);
             }
-            spans.push(Span::styled(
-                strand_chars[bi].to_string(),
-                style,
-            ));
+            spans.push(Span::styled(strand_chars[bi].to_string(), style));
         }
         spans
     };
@@ -200,11 +197,7 @@ fn render_splash(frame: &mut Frame, tick: u16, status: &str) {
             // Loading text overlaid on base background
             let dots = ".".repeat(((tick / 3) % 4) as usize);
             let lt = format!("{}{}", status.trim_end_matches('.'), dots);
-            let pad = if w > lt.len() {
-                (w - lt.len()) / 2
-            } else {
-                0
-            };
+            let pad = if w > lt.len() { (w - lt.len()) / 2 } else { 0 };
             let text_end = (pad + lt.len()).min(w);
 
             let mut spans = build_base_spans(row, 0, pad);
@@ -231,9 +224,7 @@ fn render_error(frame: &mut Frame, error: &str) {
     let text = Paragraph::new(vec![
         Line::from(Span::styled(
             "Error",
-            Style::default()
-                .fg(Color::Red)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(error.to_string()),
@@ -274,6 +265,7 @@ fn render_help_overlay(frame: &mut Frame) {
         Line::from("  S             Toggle sort direction"),
         Line::from("  /             Search files"),
         Line::from("  h / l         Scroll columns (Summary)"),
+        Line::from("  g             Cycle group dimension (Cohort, requires --metadata)"),
         Line::from("  ?             Toggle this help"),
         Line::from(""),
         Line::from(Span::styled(

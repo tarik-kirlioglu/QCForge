@@ -30,9 +30,7 @@ fn find_and_read_data_txt(
         }
     }
 
-    Err(QcForgeError::FastqcDataNotFound(
-        path.display().to_string(),
-    ))
+    Err(QcForgeError::FastqcDataNotFound(path.display().to_string()))
 }
 
 fn parse_fastqc_data(path: &Path, content: &str) -> Result<FastqcReport> {
@@ -49,7 +47,11 @@ fn parse_fastqc_data(path: &Path, content: &str) -> Result<FastqcReport> {
 
     for line in content.lines() {
         // Section start (skip ##FastQC header line)
-        if line.starts_with(">>") && !line.starts_with(">>>#") && line != ">>END_MODULE" && !line.starts_with("##") {
+        if line.starts_with(">>")
+            && !line.starts_with(">>>#")
+            && line != ">>END_MODULE"
+            && !line.starts_with("##")
+        {
             let parts: Vec<&str> = line[2..].splitn(2, '\t').collect();
             let section_name = parts[0].to_string();
             let status = parts.get(1).unwrap_or(&"pass");
@@ -85,7 +87,10 @@ fn parse_fastqc_data(path: &Path, content: &str) -> Result<FastqcReport> {
                     fields[0].trim().parse::<u32>(),
                     fields[1].trim().parse::<f64>(),
                 ) {
-                    per_seq_quality.push(PerSequenceQuality { quality: q, count: c });
+                    per_seq_quality.push(PerSequenceQuality {
+                        quality: q,
+                        count: c,
+                    });
                 }
             }
             Some("Per base sequence content") if fields.len() >= 5 => {

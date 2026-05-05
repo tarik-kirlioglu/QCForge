@@ -64,10 +64,7 @@ fn classify_raw_file(path: &Path) -> Option<RawFile> {
         return Some(RawFile::Bam(path.to_path_buf()));
     }
 
-    if lower.ends_with(".vcf")
-        || lower.ends_with(".vcf.gz")
-        || lower.ends_with(".bcf")
-    {
+    if lower.ends_with(".vcf") || lower.ends_with(".vcf.gz") || lower.ends_with(".bcf") {
         return Some(RawFile::Vcf(path.to_path_buf()));
     }
 

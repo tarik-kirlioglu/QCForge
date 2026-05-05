@@ -33,13 +33,22 @@ ui/
 
 ## Cohort Tab
 
-- Renders a 5-row ASCII boxplot panel (top, fixed 9-line block) and an outlier table (bottom, fills remainder).
+- Renders an ASCII boxplot panel (top) and an outlier table (bottom).
+- **Layout**: ungrouped uses fixed 11-line block (5 metric rows + 4 spacers + 2 borders); grouped uses 50/50 split because per-metric × per-group rows scale with group count and the boxplot panel scrolls vertically.
 - For each metric, computes `Q1`, median, `Q3` via linear-interpolation quartiles (numpy default, "Type 7"), then Tukey fences `Q1 − 1.5·IQR` and `Q3 + 1.5·IQR`.
 - Per-cell axis characters: `─` whisker, `[`/`]` box edge, `█` box fill, `│` median, `o` cohort outlier (yellow), `●` cohort outlier *and* threshold-FAIL (red, bold).
 - Right of the axis: the most extreme outlier sample name + value (or `+N more` when several).
-- Below the box panel: a `Sample | Metric | Value | Fence | Δ | Side | Threshold` table sorted by `|Δ|` descending. `n/p` (or `↑/↓`) move `cohort_selected`; the row is clamped to the live outlier count at render time.
-- If no metric has ≥5 samples the entire tab shows a single warning paragraph; if only some metrics qualify, the others render a per-row "n=N — too small" hint.
+- Below the box panel: a `Sample | (Group) | Metric | Value | Fence | Δ | Side | Threshold` table sorted by `|Δ|` descending. `Group` column appears only when grouping is active. `n/p` move `cohort_selected`; ratatui `TableState` keeps the selected row visible.
+- If no metric has ≥5 samples the entire tab shows a single warning paragraph; if only some metrics/groups qualify, the others render a per-row "n=N — too small" hint.
 - Cohort detection is TUI-only — CSV/JSON export is unchanged.
+
+### Grouping (with `--metadata`)
+
+- Tab title becomes `" Cohort [grouped by: panel] "` while grouping is active; footer adds a `g Group` hint and a `[group: <dim>]` suffix.
+- `g` key (mapped to `Action::CycleGroupDimension`) cycles `active_group_dim` through the metadata dimensions in TSV header order (None → dim1 → dim2 → ... → None).
+- Per-group IQR: `partition_by_group` buckets data points by `metadata.group_for(derive_sample_id(filename), dim)`; samples missing from the metadata go into `Ungrouped`.
+- Spacing: blank line between distinct metrics only (sibling group rows of the same metric stay tight).
+- Boxplot panel uses `Paragraph::scroll((boxplot_scroll_offset, 0))`; `j/k` adjust the offset on the Cohort tab.
 
 ## Color Scheme
 
@@ -91,11 +100,12 @@ ui/
 
 - `q` / `Esc`: Quit (in search mode, Esc clears the filter)
 - `←` / `→` / `Tab`: Switch tabs
-- `j` / `k` / `↑` / `↓`: Scroll
-- `n` / `p`: Navigate between files
+- `j` / `k` / `↑` / `↓`: Scroll (Cohort tab → boxplot panel scroll, others → generic)
+- `n` / `p`: Navigate between files (Cohort tab → outlier list selection)
 - `s`: Cycle sort column (context-aware: Overview vs Summary)
 - `S`: Toggle sort direction (asc/desc)
 - `/`: Enter search mode (real-time filtering, Enter to confirm, Esc to clear)
 - `h` / `l`: Scroll columns horizontally in the Summary tab
+- `g`: Cycle Cohort grouping dimension (no-op without `--metadata`)
 - `Ctrl+C`: Quit
 - `?`: Toggle help overlay

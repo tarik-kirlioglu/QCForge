@@ -29,6 +29,7 @@ pub fn map_key_event(key: KeyEvent, search_active: bool) -> Option<Action> {
         KeyCode::Char('/') => Some(Action::EnterSearchMode),
         KeyCode::Char('h') => Some(Action::ScrollLeft),
         KeyCode::Char('l') => Some(Action::ScrollRight),
+        KeyCode::Char('g') => Some(Action::CycleGroupDimension),
         _ => None,
     }
 }

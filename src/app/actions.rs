@@ -21,6 +21,7 @@ pub enum Action {
     SearchBackspace,
     ScrollLeft,
     ScrollRight,
+    CycleGroupDimension,
     Resize(u16, u16),
     SplashStatus(String),
     LoadComplete(QcResults),

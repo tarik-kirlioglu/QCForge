@@ -18,7 +18,7 @@ ui::draw(frame, &app_state)
 - All user and system actions in a single enum
 - EventHandler converts crossterm events into Actions
 - App.update() processes Actions and updates state
-- Actions: Tick, Render, Quit, NextTab, PrevTab, ScrollUp, ScrollDown, ScrollLeft, ScrollRight, NextFile, PrevFile, ToggleHelp, CycleSortColumn, ToggleSortDirection, EnterSearchMode, ExitSearchMode, ConfirmSearch, SearchInput(char), SearchBackspace, Resize, SplashStatus, LoadComplete, Error
+- Actions: Tick, Render, Quit, NextTab, PrevTab, ScrollUp, ScrollDown, ScrollLeft, ScrollRight, NextFile, PrevFile, ToggleHelp, CycleSortColumn, ToggleSortDirection, EnterSearchMode, ExitSearchMode, ConfirmSearch, SearchInput(char), SearchBackspace, CycleGroupDimension, Resize, SplashStatus, LoadComplete, Error
 
 ### `state.rs` — AppState
 - `active_tab: ActiveTab` — which tab is active (default: Summary)
@@ -28,6 +28,9 @@ ui::draw(frame, &app_state)
 - `error_message: Option<String>` — error message
 - `qc_results: Option<QcResults>` — parsed data
 - Per-tab selection indices: `samtools_selected`, `bcftools_selected`, `fastqc_selected`, `cohort_selected`
+- `boxplot_scroll_offset: u16` — vertical scroll for Cohort tab boxplot panel; updated by `j/k` when `active_tab == Cohort`
+- `metadata: Option<SampleMetadata>` — loaded from `--metadata <FILE>` TSV; carries `sample_id → annotations` map and dimension list
+- `active_group_dim: Option<String>` — currently active Cohort grouping dimension (None = no grouping, default)
 - `scroll_offset: u16`
 - `sort_column: SortColumn` — active sort column in the Overview table (File/Tool/Summary/Status)
 - `sort_ascending: bool` — sort direction
@@ -66,6 +69,8 @@ ui::draw(frame, &app_state)
 - CycleSortColumn is context-aware: `summary_sort_column.next()` in Summary tab, `sort_column.next()` in others
 - ScrollLeft/ScrollRight only updates `summary_horizontal_offset` in the Summary tab
 - NextFile/PrevFile updates `summary_selected` in the Summary tab
+- ScrollUp/ScrollDown routes to `boxplot_scroll_offset` in the Cohort tab; otherwise to `scroll_offset`
+- CycleGroupDimension cycles `active_group_dim` through `metadata.dimensions` (None → first → next → ... → None) and resets `cohort_selected` + `boxplot_scroll_offset`
 - `thresholds: ThresholdConfig` — QC threshold rules (loadable from TOML or default)
 - `Action::SplashStatus` handler: updates `splash_status` message
 - `Action::Render` handler: increments `splash_tick` during loading; transitions `pending_results` to `qc_results` and sets `loading=false` after 24 ticks + data ready

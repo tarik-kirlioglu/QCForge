@@ -1,6 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use crate::metadata::SampleMetadata;
 use crate::parser::types::QcResults;
 use crate::threshold::ThresholdConfig;
 
@@ -146,7 +147,10 @@ pub struct AppState {
     pub summary_horizontal_offset: u16,
     pub summary_selected: usize,
     pub cohort_selected: usize,
+    pub boxplot_scroll_offset: u16,
     pub thresholds: ThresholdConfig,
+    pub metadata: Option<SampleMetadata>,
+    pub active_group_dim: Option<String>,
     pub splash_tick: u16,
     pub splash_done: bool,
     pub splash_status: String,
@@ -154,7 +158,11 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(search_active_flag: Arc<AtomicBool>, thresholds: ThresholdConfig) -> Self {
+    pub fn new(
+        search_active_flag: Arc<AtomicBool>,
+        thresholds: ThresholdConfig,
+        metadata: Option<SampleMetadata>,
+    ) -> Self {
         Self {
             active_tab: ActiveTab::Summary,
             should_quit: false,
@@ -176,11 +184,14 @@ impl AppState {
             summary_horizontal_offset: 0,
             summary_selected: 0,
             cohort_selected: 0,
+            boxplot_scroll_offset: 0,
             splash_tick: 0,
             splash_done: false,
             splash_status: "Loading QC data".to_string(),
             pending_results: None,
             thresholds,
+            metadata,
+            active_group_dim: None,
         }
     }
 

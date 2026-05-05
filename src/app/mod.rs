@@ -23,10 +23,18 @@ impl AppState {
                 }
             }
             Action::ScrollDown => {
-                self.scroll_offset = self.scroll_offset.saturating_add(1);
+                if self.active_tab == ActiveTab::Cohort {
+                    self.boxplot_scroll_offset = self.boxplot_scroll_offset.saturating_add(1);
+                } else {
+                    self.scroll_offset = self.scroll_offset.saturating_add(1);
+                }
             }
             Action::ScrollUp => {
-                self.scroll_offset = self.scroll_offset.saturating_sub(1);
+                if self.active_tab == ActiveTab::Cohort {
+                    self.boxplot_scroll_offset = self.boxplot_scroll_offset.saturating_sub(1);
+                } else {
+                    self.scroll_offset = self.scroll_offset.saturating_sub(1);
+                }
             }
             Action::ScrollLeft => {
                 if self.active_tab == ActiveTab::Summary {
@@ -149,6 +157,26 @@ impl AppState {
                         self.qc_results = self.pending_results.take();
                         self.loading = false;
                     }
+                }
+            }
+            Action::CycleGroupDimension => {
+                if let Some(ref md) = self.metadata {
+                    let dims = md.dimensions.clone();
+                    if dims.is_empty() {
+                        return;
+                    }
+                    self.active_group_dim = match &self.active_group_dim {
+                        None => dims.first().cloned(),
+                        Some(cur) => {
+                            let idx = dims.iter().position(|d| d == cur);
+                            match idx {
+                                Some(i) if i + 1 < dims.len() => Some(dims[i + 1].clone()),
+                                _ => None,
+                            }
+                        }
+                    };
+                    self.cohort_selected = 0;
+                    self.boxplot_scroll_offset = 0;
                 }
             }
             Action::Resize(_, _) | Action::Tick => {}

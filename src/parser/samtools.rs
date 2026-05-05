@@ -82,16 +82,8 @@ pub fn parse_samtools_stats(path: &Path, content: &str) -> Result<SamtoolsStats>
 }
 
 fn build_summary(raw: BTreeMap<String, String>) -> SamtoolsSummary {
-    let get_u64 = |key: &str| -> u64 {
-        raw.get(key)
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(0)
-    };
-    let get_f64 = |key: &str| -> f64 {
-        raw.get(key)
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(0.0)
-    };
+    let get_u64 = |key: &str| -> u64 { raw.get(key).and_then(|v| v.parse().ok()).unwrap_or(0) };
+    let get_f64 = |key: &str| -> f64 { raw.get(key).and_then(|v| v.parse().ok()).unwrap_or(0.0) };
 
     SamtoolsSummary {
         raw_total_sequences: get_u64("raw total sequences"),
@@ -116,10 +108,13 @@ fn build_summary(raw: BTreeMap<String, String>) -> SamtoolsSummary {
 }
 
 fn parse_num<T: std::str::FromStr>(path: &Path, field: &str, value: &str) -> Result<T> {
-    value.trim().parse::<T>().map_err(|_| QcForgeError::NumericParse {
-        field: format!("{}:{}", path.display(), field),
-        value: value.trim().to_string(),
-    })
+    value
+        .trim()
+        .parse::<T>()
+        .map_err(|_| QcForgeError::NumericParse {
+            field: format!("{}:{}", path.display(), field),
+            value: value.trim().to_string(),
+        })
 }
 
 #[cfg(test)]

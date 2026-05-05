@@ -61,7 +61,10 @@ pub fn generate_stats(
                     continue;
                 }
 
-                on_progress(&format!("Running samtools stats on {}", bam_path.file_name().unwrap_or_default().to_string_lossy()));
+                on_progress(&format!(
+                    "Running samtools stats on {}",
+                    bam_path.file_name().unwrap_or_default().to_string_lossy()
+                ));
                 let output = Command::new("samtools")
                     .arg("stats")
                     .arg(bam_path)
@@ -88,7 +91,10 @@ pub fn generate_stats(
                     continue;
                 }
 
-                on_progress(&format!("Running bcftools stats on {}", vcf_path.file_name().unwrap_or_default().to_string_lossy()));
+                on_progress(&format!(
+                    "Running bcftools stats on {}",
+                    vcf_path.file_name().unwrap_or_default().to_string_lossy()
+                ));
                 let output = Command::new("bcftools")
                     .arg("stats")
                     .arg(vcf_path)
@@ -115,10 +121,13 @@ pub fn generate_stats(
                     continue;
                 }
 
-                let out_dir = output_dir
-                    .unwrap_or_else(|| fq_path.parent().unwrap_or(Path::new(".")));
+                let out_dir =
+                    output_dir.unwrap_or_else(|| fq_path.parent().unwrap_or(Path::new(".")));
 
-                on_progress(&format!("Running fastqc on {}", fq_path.file_name().unwrap_or_default().to_string_lossy()));
+                on_progress(&format!(
+                    "Running fastqc on {}",
+                    fq_path.file_name().unwrap_or_default().to_string_lossy()
+                ));
                 let output = Command::new("fastqc")
                     .arg(fq_path)
                     .arg("--outdir")

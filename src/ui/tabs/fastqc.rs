@@ -15,8 +15,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
     };
 
     if results.fastqc_reports.is_empty() {
-        let msg = Paragraph::new("No FastQC files found.")
-            .style(Style::default().fg(Color::Gray));
+        let msg = Paragraph::new("No FastQC files found.").style(Style::default().fg(Color::Gray));
         frame.render_widget(msg, area);
         return;
     }
@@ -26,10 +25,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(2),
-            Constraint::Min(0),
-        ])
+        .constraints([Constraint::Length(2), Constraint::Min(0)])
         .split(area);
 
     render_file_header(frame, chunks[0], report, state.fastqc_selected, file_count);
@@ -74,19 +70,13 @@ fn render_file_header(
 fn render_content(frame: &mut Frame, area: Rect, report: &FastqcReport) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(45),
-            Constraint::Percentage(55),
-        ])
+        .constraints([Constraint::Percentage(45), Constraint::Percentage(55)])
         .split(area);
 
     // Left: basic stats + module statuses
     let left_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(11),
-            Constraint::Min(0),
-        ])
+        .constraints([Constraint::Length(11), Constraint::Min(0)])
         .split(chunks[0]);
 
     render_basic_stats(frame, left_chunks[0], report);
@@ -104,7 +94,10 @@ fn render_basic_stats(frame: &mut Frame, area: Rect, report: &FastqcReport) {
         ("File Type", s.file_type.clone()),
         ("Encoding", s.encoding.clone()),
         ("Total Sequences", format_number(s.total_sequences)),
-        ("Poor Quality", format_number(s.sequences_flagged_poor_quality)),
+        (
+            "Poor Quality",
+            format_number(s.sequences_flagged_poor_quality),
+        ),
         ("Sequence Length", s.sequence_length.clone()),
         ("GC %", format!("{}%", s.percent_gc)),
     ];
@@ -121,13 +114,12 @@ fn render_basic_stats(frame: &mut Frame, area: Rect, report: &FastqcReport) {
 
     let widths = [Constraint::Percentage(45), Constraint::Percentage(55)];
 
-    let table = Table::new(rows, widths)
-        .block(
-            Block::default()
-                .title(" Basic Statistics ")
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Cyan)),
-        );
+    let table = Table::new(rows, widths).block(
+        Block::default()
+            .title(" Basic Statistics ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan)),
+    );
 
     frame.render_widget(table, area);
 }
@@ -145,24 +137,20 @@ fn render_module_statuses(frame: &mut Frame, area: Rect, report: &FastqcReport) 
 
             Row::new(vec![
                 Cell::from(name.clone()).style(Style::default().fg(Color::White)),
-                Cell::from(status_str).style(
-                    Style::default()
-                        .fg(color)
-                        .add_modifier(Modifier::BOLD),
-                ),
+                Cell::from(status_str)
+                    .style(Style::default().fg(color).add_modifier(Modifier::BOLD)),
             ])
         })
         .collect();
 
     let widths = [Constraint::Min(30), Constraint::Length(6)];
 
-    let table = Table::new(rows, widths)
-        .block(
-            Block::default()
-                .title(" Module Status ")
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Cyan)),
-        );
+    let table = Table::new(rows, widths).block(
+        Block::default()
+            .title(" Module Status ")
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan)),
+    );
 
     frame.render_widget(table, area);
 }
@@ -201,8 +189,11 @@ fn render_per_base_quality(frame: &mut Frame, area: Rect, report: &FastqcReport)
                 Cell::from(pbq.base.clone()).style(Style::default().fg(Color::White)),
                 Cell::from(format!("{:.1}", pbq.mean)).style(Style::default().fg(mean_color)),
                 Cell::from(format!("{:.0}", pbq.median)).style(Style::default().fg(Color::Gray)),
-                Cell::from(format!("{:.0}-{:.0}", pbq.lower_quartile, pbq.upper_quartile))
-                    .style(Style::default().fg(Color::DarkGray)),
+                Cell::from(format!(
+                    "{:.0}-{:.0}",
+                    pbq.lower_quartile, pbq.upper_quartile
+                ))
+                .style(Style::default().fg(Color::DarkGray)),
                 Cell::from(bar).style(Style::default().fg(mean_color)),
             ])
         })
@@ -217,15 +208,13 @@ fn render_per_base_quality(frame: &mut Frame, area: Rect, report: &FastqcReport)
     ];
 
     let table = Table::new(rows, widths)
-        .header(
-            Row::new(vec![
-                Cell::from("Base").style(table_style::header_style()),
-                Cell::from("Mean").style(table_style::header_style()),
-                Cell::from("Med").style(table_style::header_style()),
-                Cell::from("IQR").style(table_style::header_style()),
-                Cell::from("Quality").style(table_style::header_style()),
-            ])
-        )
+        .header(Row::new(vec![
+            Cell::from("Base").style(table_style::header_style()),
+            Cell::from("Mean").style(table_style::header_style()),
+            Cell::from("Med").style(table_style::header_style()),
+            Cell::from("IQR").style(table_style::header_style()),
+            Cell::from("Quality").style(table_style::header_style()),
+        ]))
         .block(
             Block::default()
                 .title(" Per Base Quality ")

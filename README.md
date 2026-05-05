@@ -11,6 +11,7 @@ Built with Rust using [ratatui](https://github.com/ratatui/ratatui) + [crossterm
 - **6 interactive tabs** — Summary (MultiQC-style), Overview dashboard, samtools stats, bcftools stats, FastQC, Cohort (IQR-based outlier detection)
 - **QC thresholds** — Built-in quality thresholds with color-coded cells (green/yellow/red), customizable via TOML config
 - **Cohort outlier detection** — Cohort-relative IQR (Tukey fences) flags samples that deviate from the rest of the batch, orthogonal to absolute QC thresholds
+- **Sample metadata grouping** — Optional `--metadata` TSV partitions the cohort by panel (WES/WGS/CES/...), case_type (tumor/normal/germline), batch, or any custom dimension; IQR is computed within each group so heterogeneous cohorts don't pollute each other's outlier flags. Cycle dimensions live in TUI with `g`
 - **CI/CD integration** — `--strict` flag exits with code 1 if any sample fails QC thresholds
 - **Visual metrics** — Gauges for mapping/duplication rates, inline bar charts for substitution types and indel distributions, colored PASS/WARN/FAIL indicators
 - **JSON export** — Export all parsed QC data as JSON for downstream analysis (`--export-json`)
@@ -71,7 +72,23 @@ qcforge --thresholds custom_thresholds.toml /path/to/qc_outputs/
 
 # Strict mode for CI/CD (exit code 1 if any FAIL)
 qcforge --strict --export-csv summary.csv /path/to/qc_outputs/
+
+# Cohort grouping by sample metadata (panel/case_type/batch/...)
+qcforge --metadata samples.tsv /path/to/qc_outputs/
 ```
+
+#### Metadata TSV format
+
+```tsv
+sample_id	panel	case_type	batch
+tumor_WGS	WGS	tumor	2024-Q1
+normal_WGS	WGS	normal	2024-Q1
+sample_A	CES	germline	2024-Q2
+exome_007	WES	germline	2024-Q2
+panel_42	SGH	germline	2024-Q3
+```
+
+`sample_id` is required; every other column becomes a grouping dimension. Press `g` in the Cohort tab to cycle dimensions; per-group Tukey IQR is computed independently. Sample matching strips `_fastqc.zip`, `.vcf.stats`, `.stats`, and a single trailing extension before lookup. Samples missing from the metadata fall into the `Ungrouped` bucket.
 
 ### Supported Input Files
 
@@ -99,6 +116,7 @@ Options:
       --export-csv <FILE>  Export QC summary as CSV/TSV and exit (.tsv = tab-delimited)
       --thresholds <FILE>  QC threshold config file (TOML format)
       --strict             Exit with code 1 if any sample fails QC thresholds
+      --metadata <FILE>    Sample metadata TSV (sample_id + annotation columns) for Cohort grouping
   -f, --filter <FILTER>    Only show results for a specific tool [samtools|bcftools|fastqc]
       --max-depth <N>      Maximum directory depth for recursive scan [default: 5]
   -h, --help               Print help
@@ -117,6 +135,7 @@ Options:
 | `S` | Toggle sort direction (ascending / descending) |
 | `/` | Search mode (type to filter, Enter to confirm, Esc to clear) |
 | `h` / `l` | Scroll columns left/right (Summary tab) |
+| `g` | Cycle Cohort grouping dimension (requires `--metadata`) |
 | `?` | Toggle help overlay |
 | `Ctrl+C` | Quit |
 
@@ -140,6 +159,8 @@ Basic statistics, module status list with colored PASS/WARN/FAIL indicators, and
 ### Cohort
 Cohort-relative outlier detection across the loaded batch. For each of 5 metrics (Mapping %, Dup %, Error rate, Ts/Tv, GC dev), an ASCII boxplot draws the cohort distribution (Q1, median, Q3, Tukey fences); samples beyond the fences are flagged. Samples that *also* fail an absolute QC threshold render in red, the rest in yellow — making cohort drift and absolute breakage visible as separate signals. Below the boxplots, a sorted outlier list ranks samples by deviation magnitude. Requires ≥5 samples per metric to compute IQR; otherwise a per-row "n=N — too small" hint is shown.
 
+With `--metadata samples.tsv`, the cohort is partitioned by sample metadata before IQR is computed. Press `g` in the Cohort tab to cycle through dimensions (e.g. `panel`, `case_type`, `batch`); each group's IQR is computed independently so e.g. WES samples aren't compared against WGS samples on raw mapping percentage.
+
 ## Project Structure
 
 ```
@@ -149,6 +170,7 @@ src/
 ├── error.rs        # Custom error types (thiserror)
 ├── export.rs       # CSV/TSV export module
 ├── threshold.rs    # QC threshold engine
+├── metadata.rs     # Sample metadata TSV reader + derive_sample_id (cohort grouping)
 ├── app/            # State machine (Action pattern)
 ├── event/          # Async event handling (crossterm EventStream)
 ├── generator/      # BAM/VCF/FASTQ → stats generation (subprocess)

@@ -41,6 +41,11 @@ pub struct Cli {
     /// Exit with code 1 if any sample fails QC thresholds
     #[arg(long)]
     pub strict: bool,
+
+    /// Sample metadata TSV (sample_id column + arbitrary annotation columns).
+    /// Each annotation column becomes a grouping dimension in the Cohort tab.
+    #[arg(long, value_name = "FILE")]
+    pub metadata: Option<PathBuf>,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug)]

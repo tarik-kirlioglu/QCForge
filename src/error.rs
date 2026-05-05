@@ -30,6 +30,9 @@ pub enum QcForgeError {
     #[error("TOML parse error: {0}")]
     TomlParse(String),
 
+    #[error("Metadata error: {0}")]
+    MetadataError(String),
+
     #[error("Terminal error: {0}")]
     Terminal(String),
 }

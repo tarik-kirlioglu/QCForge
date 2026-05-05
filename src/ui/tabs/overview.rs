@@ -18,7 +18,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(8),  // discovery summary + quick stats
+            Constraint::Length(8), // discovery summary + quick stats
             Constraint::Min(0),    // file list
         ])
         .split(area);
@@ -114,15 +114,24 @@ fn render_quick_stats(frame: &mut Frame, area: Rect, results: &QcResults) {
 
         lines.push(Line::from(vec![
             Span::styled("  Total Reads: ", Style::default().fg(Color::Gray)),
-            Span::styled(format_large_number(total_reads), Style::default().fg(Color::White)),
+            Span::styled(
+                format_large_number(total_reads),
+                Style::default().fg(Color::White),
+            ),
         ]));
         lines.push(Line::from(vec![
             Span::styled("  Mapped:      ", Style::default().fg(Color::Gray)),
-            Span::styled(format_large_number(total_mapped), Style::default().fg(Color::White)),
+            Span::styled(
+                format_large_number(total_mapped),
+                Style::default().fg(Color::White),
+            ),
         ]));
         lines.push(Line::from(vec![
             Span::styled("  Avg Error:   ", Style::default().fg(Color::Gray)),
-            Span::styled(format!("{:.4}", avg_error), Style::default().fg(Color::White)),
+            Span::styled(
+                format!("{:.4}", avg_error),
+                Style::default().fg(Color::White),
+            ),
         ]));
     }
 
@@ -139,7 +148,10 @@ fn render_quick_stats(frame: &mut Frame, area: Rect, results: &QcResults) {
         }
         lines.push(Line::from(vec![
             Span::styled("  Variants:    ", Style::default().fg(Color::Gray)),
-            Span::styled(format_number(total_variants), Style::default().fg(Color::White)),
+            Span::styled(
+                format_number(total_variants),
+                Style::default().fg(Color::White),
+            ),
         ]));
     }
 
@@ -158,7 +170,9 @@ fn render_gauges(frame: &mut Frame, area: Rect, results: &QcResults) {
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Cyan));
         frame.render_widget(
-            Paragraph::new("  No alignment data").style(Style::default().fg(Color::Gray)).block(block),
+            Paragraph::new("  No alignment data")
+                .style(Style::default().fg(Color::Gray))
+                .block(block),
             area,
         );
         return;

@@ -4,9 +4,10 @@ mod error;
 mod event;
 mod export;
 mod generator;
-mod threshold;
+mod metadata;
 mod parser;
 mod scanner;
+mod threshold;
 mod ui;
 
 use std::io;
@@ -41,15 +42,28 @@ async fn main() -> Result<()> {
         ThresholdConfig::default()
     };
 
+    // Load optional sample metadata for cohort grouping
+    let metadata = if let Some(ref path) = cli.metadata {
+        Some(metadata::SampleMetadata::load_from_file(path)?)
+    } else {
+        None
+    };
+
     // Export mode: no TUI, just parse and dump (generate runs synchronously here)
     if cli.export_json.is_some() || cli.export_csv.is_some() {
         if cli.generate {
             eprintln!("Scanning for BAM/VCF/FASTQ files...");
             let raw_files = scanner::scan_raw_files(&cli.input_dir, cli.max_depth)?;
             if raw_files.is_empty() {
-                eprintln!("No BAM/VCF/FASTQ files found in {}", cli.input_dir.display());
+                eprintln!(
+                    "No BAM/VCF/FASTQ files found in {}",
+                    cli.input_dir.display()
+                );
             } else {
-                eprintln!("Found {} BAM/VCF/FASTQ file(s). Generating stats...", raw_files.len());
+                eprintln!(
+                    "Found {} BAM/VCF/FASTQ file(s). Generating stats...",
+                    raw_files.len()
+                );
                 generator::generate_stats(&raw_files, cli.output_dir.as_deref(), |msg| {
                     eprintln!("  {}", msg);
                 })?;
@@ -116,11 +130,15 @@ async fn main() -> Result<()> {
     tokio::spawn(async move {
         // Generate stats if requested
         if do_generate {
-            let _ = tx.send(Action::SplashStatus("Scanning for BAM/VCF/FASTQ files".to_string()));
+            let _ = tx.send(Action::SplashStatus(
+                "Scanning for BAM/VCF/FASTQ files".to_string(),
+            ));
             let scan_path_gen = scan_path.clone();
             let raw_files = match tokio::task::spawn_blocking(move || {
                 scanner::scan_raw_files(&scan_path_gen, max_depth)
-            }).await {
+            })
+            .await
+            {
                 Ok(Ok(files)) => files,
                 Ok(Err(e)) => {
                     let _ = tx.send(Action::Error(e.to_string()));
@@ -133,16 +151,20 @@ async fn main() -> Result<()> {
             };
 
             if !raw_files.is_empty() {
-                let _ = tx.send(Action::SplashStatus(
-                    format!("Generating stats ({} files)", raw_files.len()),
-                ));
+                let _ = tx.send(Action::SplashStatus(format!(
+                    "Generating stats ({} files)",
+                    raw_files.len()
+                )));
                 let out_dir = output_dir.clone();
                 let tx_gen = tx.clone();
                 if let Err(e) = tokio::task::spawn_blocking(move || {
                     generator::generate_stats(&raw_files, out_dir.as_deref(), |msg| {
                         let _ = tx_gen.send(Action::SplashStatus(msg.to_string()));
                     })
-                }).await.unwrap_or_else(|e| Err(error::QcForgeError::Terminal(e.to_string()))) {
+                })
+                .await
+                .unwrap_or_else(|e| Err(error::QcForgeError::Terminal(e.to_string())))
+                {
                     let _ = tx.send(Action::Error(e.to_string()));
                     return;
                 }
@@ -162,7 +184,7 @@ async fn main() -> Result<()> {
     });
 
     // App state
-    let mut state = AppState::new(search_active_flag, thresholds.clone());
+    let mut state = AppState::new(search_active_flag, thresholds.clone(), metadata);
 
     // Main loop
     loop {
@@ -185,10 +207,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn load_qc_data(
-    scan_path: &std::path::Path,
-    max_depth: usize,
-) -> Result<QcResults> {
+async fn load_qc_data(scan_path: &std::path::Path, max_depth: usize) -> Result<QcResults> {
     let scan_path_buf = scan_path.to_path_buf();
     let detected = scanner::scan_directory(scan_path, max_depth)?;
 
@@ -200,23 +219,24 @@ async fn load_qc_data(
     for file in detected {
         match file {
             scanner::DetectedFile::SamtoolsStats(path) => {
-                let content =
-                    tokio::fs::read_to_string(&path).await.map_err(error::QcForgeError::Io)?;
+                let content = tokio::fs::read_to_string(&path)
+                    .await
+                    .map_err(error::QcForgeError::Io)?;
                 let stats = parser::samtools::parse_samtools_stats(&path, &content)?;
                 results.samtools_reports.push(stats);
             }
             scanner::DetectedFile::BcftoolsStats(path) => {
-                let content =
-                    tokio::fs::read_to_string(&path).await.map_err(error::QcForgeError::Io)?;
+                let content = tokio::fs::read_to_string(&path)
+                    .await
+                    .map_err(error::QcForgeError::Io)?;
                 let stats = parser::bcftools::parse_bcftools_stats(&path, &content)?;
                 results.bcftools_reports.push(stats);
             }
             scanner::DetectedFile::FastqcZip(path) => {
-                let report = tokio::task::spawn_blocking(move || {
-                    parser::fastqc::parse_fastqc_zip(&path)
-                })
-                .await
-                .map_err(|e| error::QcForgeError::Terminal(e.to_string()))??;
+                let report =
+                    tokio::task::spawn_blocking(move || parser::fastqc::parse_fastqc_zip(&path))
+                        .await
+                        .map_err(|e| error::QcForgeError::Terminal(e.to_string()))??;
                 results.fastqc_reports.push(report);
             }
         }
@@ -249,13 +269,8 @@ fn check_qc_failures(results: &QcResults, thresholds: &ThresholdConfig) -> bool 
     }
 
     for r in &results.fastqc_reports {
-        let level = thresholds.evaluate_sample(
-            None,
-            None,
-            None,
-            None,
-            Some(r.basic_statistics.percent_gc),
-        );
+        let level =
+            thresholds.evaluate_sample(None, None, None, None, Some(r.basic_statistics.percent_gc));
         if level == QcLevel::Fail {
             return true;
         }

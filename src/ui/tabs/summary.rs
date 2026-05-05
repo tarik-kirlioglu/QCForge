@@ -90,13 +90,8 @@ pub fn build_summary_rows(results: &QcResults, thresholds: &ThresholdConfig) -> 
         let s = &report.summary;
         let mapped = s.mapping_percent();
         let dup = s.duplication_percent();
-        let overall = thresholds.evaluate_sample(
-            Some(mapped),
-            Some(dup),
-            Some(s.error_rate),
-            None,
-            None,
-        );
+        let overall =
+            thresholds.evaluate_sample(Some(mapped), Some(dup), Some(s.error_rate), None, None);
         rows.push(SummaryRow {
             filename: fname,
             tool: "samtools".into(),
@@ -124,7 +119,8 @@ pub fn build_summary_rows(results: &QcResults, thresholds: &ThresholdConfig) -> 
             .file_name()
             .map(|f| f.to_string_lossy().to_string())
             .unwrap_or_default();
-        let overall = thresholds.evaluate_sample(None, None, None, Some(report.tstv.ts_tv_ratio), None);
+        let overall =
+            thresholds.evaluate_sample(None, None, None, Some(report.tstv.ts_tv_ratio), None);
         rows.push(SummaryRow {
             filename: fname,
             tool: "bcftools".into(),
@@ -280,10 +276,18 @@ fn metric_cell_color(row: &SummaryRow, col_idx: usize, thresholds: &ThresholdCon
             "FastQC" => Color::Yellow,
             _ => Color::White,
         },
-        2 => row.mapped_pct.map_or(Color::DarkGray, |v| thresholds.mapping_rate.color(v)),
-        3 => row.dup_pct.map_or(Color::DarkGray, |v| thresholds.duplication_rate.color(v)),
-        4 => row.error_rate.map_or(Color::DarkGray, |v| thresholds.error_rate.color(v)),
-        9 => row.ts_tv.map_or(Color::DarkGray, |v| thresholds.ts_tv_ratio.color(v)),
+        2 => row
+            .mapped_pct
+            .map_or(Color::DarkGray, |v| thresholds.mapping_rate.color(v)),
+        3 => row
+            .dup_pct
+            .map_or(Color::DarkGray, |v| thresholds.duplication_rate.color(v)),
+        4 => row
+            .error_rate
+            .map_or(Color::DarkGray, |v| thresholds.error_rate.color(v)),
+        9 => row
+            .ts_tv
+            .map_or(Color::DarkGray, |v| thresholds.ts_tv_ratio.color(v)),
         11 => row.gc_pct.map_or(Color::DarkGray, |v| {
             thresholds.gc_deviation.color((v - 50.0).abs())
         }),
@@ -306,8 +310,14 @@ pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
 
     // Sort
     rows.sort_by(|a, b| {
-        let cmp = a.sort_key(state.summary_sort_column).cmp(&b.sort_key(state.summary_sort_column));
-        if state.sort_ascending { cmp } else { cmp.reverse() }
+        let cmp = a
+            .sort_key(state.summary_sort_column)
+            .cmp(&b.sort_key(state.summary_sort_column));
+        if state.sort_ascending {
+            cmp
+        } else {
+            cmp.reverse()
+        }
     });
 
     // Filter
@@ -326,11 +336,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
     let clamped_offset = h_offset.min(METRIC_COLUMNS.len().saturating_sub(1));
 
     // Split area: frozen file column + scrollable metrics
-    let chunks = Layout::horizontal([
-        Constraint::Min(22),
-        Constraint::Fill(1),
-    ])
-    .split(area);
+    let chunks = Layout::horizontal([Constraint::Min(22), Constraint::Fill(1)]).split(area);
 
     let file_area = chunks[0];
     let metric_area = chunks[1];
@@ -354,7 +360,11 @@ pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
     };
 
     // Sort indicator
-    let indicator = if state.sort_ascending { "\u{25b2}" } else { "\u{25bc}" };
+    let indicator = if state.sort_ascending {
+        "\u{25b2}"
+    } else {
+        "\u{25bc}"
+    };
     let sort_col_idx = state.summary_sort_column.index();
     // Sort indicator for File column (index 0 in SummarySortColumn)
     let file_header = if sort_col_idx == 0 {
@@ -366,23 +376,24 @@ pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
     // Build file column table (frozen)
     let file_rows: Vec<Row> = rows
         .iter()
-        .map(|r| Row::new(vec![Cell::from(r.filename.as_str()).style(Style::default().fg(Color::White))]))
+        .map(|r| {
+            Row::new(vec![
+                Cell::from(r.filename.as_str()).style(Style::default().fg(Color::White))
+            ])
+        })
         .collect();
 
-    let file_table = Table::new(
-        file_rows,
-        [Constraint::Fill(1)],
-    )
-    .header(Row::new(vec![
-        Cell::from(file_header).style(table_style::header_style()),
-    ]))
-    .block(
-        Block::default()
-            .title(" Summary ")
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Cyan)),
-    )
-    .row_highlight_style(table_style::highlight_style());
+    let file_table = Table::new(file_rows, [Constraint::Fill(1)])
+        .header(Row::new(vec![
+            Cell::from(file_header).style(table_style::header_style())
+        ]))
+        .block(
+            Block::default()
+                .title(" Summary ")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Cyan)),
+        )
+        .row_highlight_style(table_style::highlight_style());
 
     frame.render_widget(file_table, file_area);
 
@@ -560,9 +571,9 @@ mod tests {
                 source_file: PathBuf::from("bad.stats"),
                 summary: SamtoolsSummary {
                     raw_total_sequences: 1000,
-                    reads_mapped: 700, // 70% → FAIL
+                    reads_mapped: 700,     // 70% → FAIL
                     reads_duplicated: 400, // 40% → FAIL
-                    error_rate: 0.02, // FAIL
+                    error_rate: 0.02,      // FAIL
                     ..Default::default()
                 },
                 coverage_histogram: vec![],

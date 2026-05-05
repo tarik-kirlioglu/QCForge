@@ -30,11 +30,17 @@ pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(2), // file selector
-            Constraint::Min(0),   // content
+            Constraint::Min(0),    // content
         ])
         .split(area);
 
-    render_file_header(frame, chunks[0], report, state.samtools_selected, file_count);
+    render_file_header(
+        frame,
+        chunks[0],
+        report,
+        state.samtools_selected,
+        file_count,
+    );
     render_content(frame, chunks[1], report);
 }
 
@@ -53,15 +59,17 @@ fn render_file_header(
 
     let header = Line::from(vec![
         Span::styled("samtools: ", Style::default().fg(Color::Cyan)),
-        Span::styled(&filename, Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            &filename,
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(
             format!("  [{}/{}]", selected + 1, total),
             Style::default().fg(Color::Gray),
         ),
-        Span::styled(
-            "  n:Next p:Prev",
-            Style::default().fg(Color::DarkGray),
-        ),
+        Span::styled("  n:Next p:Prev", Style::default().fg(Color::DarkGray)),
     ]);
 
     frame.render_widget(Paragraph::new(header), area);
@@ -71,10 +79,7 @@ fn render_content(frame: &mut Frame, area: Rect, report: &SamtoolsStats) {
     // Split into left (summary table) and right (gauges)
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(60),
-            Constraint::Percentage(40),
-        ])
+        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
         .split(area);
 
     render_summary_table(frame, chunks[0], report);
@@ -89,7 +94,10 @@ fn render_summary_table(frame: &mut Frame, area: Rect, report: &SamtoolsStats) {
         ("Reads Mapped", format_number(s.reads_mapped)),
         ("Reads Unmapped", format_number(s.reads_unmapped)),
         ("Reads Duplicated", format_number(s.reads_duplicated)),
-        ("Reads Properly Paired", format_number(s.reads_properly_paired)),
+        (
+            "Reads Properly Paired",
+            format_number(s.reads_properly_paired),
+        ),
         ("Reads QC Failed", format_number(s.reads_qc_failed)),
         ("Reads MQ0", format_number(s.reads_mq0)),
         ("Total Length", format_number(s.total_length)),
@@ -99,8 +107,14 @@ fn render_summary_table(frame: &mut Frame, area: Rect, report: &SamtoolsStats) {
         ("Average Length", format!("{:.1}", s.average_length)),
         ("Average Quality", format!("{:.1}", s.average_quality)),
         ("Insert Size Avg", format!("{:.1}", s.insert_size_average)),
-        ("Insert Size Std", format!("{:.1}", s.insert_size_std_deviation)),
-        ("Diff Chr Pairs", format_number(s.pairs_on_different_chromosomes)),
+        (
+            "Insert Size Std",
+            format!("{:.1}", s.insert_size_std_deviation),
+        ),
+        (
+            "Diff Chr Pairs",
+            format_number(s.pairs_on_different_chromosomes),
+        ),
     ];
 
     let rows: Vec<Row> = data
@@ -111,12 +125,10 @@ fn render_summary_table(frame: &mut Frame, area: Rect, report: &SamtoolsStats) {
     let widths = [Constraint::Percentage(55), Constraint::Percentage(45)];
 
     let table = Table::new(rows, widths)
-        .header(
-            Row::new(vec![
-                Cell::from("Metric").style(table_style::header_style()),
-                Cell::from("Value").style(table_style::header_style()),
-            ])
-        )
+        .header(Row::new(vec![
+            Cell::from("Metric").style(table_style::header_style()),
+            Cell::from("Value").style(table_style::header_style()),
+        ]))
         .block(
             Block::default()
                 .title(" Summary Numbers ")

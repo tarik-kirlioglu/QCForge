@@ -6,6 +6,8 @@ use ratatui::Frame;
 
 use crate::app::state::{ActiveTab, AppState};
 
+const COHORT_GROUP_HINT: &str = "g Group  ";
+
 /// Main layout structure returned to the caller
 pub struct AppLayout {
     pub content: Rect,
@@ -19,7 +21,7 @@ pub fn render_chrome(frame: &mut Frame, state: &AppState) -> AppLayout {
         .constraints([
             Constraint::Length(1), // header
             Constraint::Length(2), // tabs
-            Constraint::Min(0),   // content
+            Constraint::Min(0),    // content
             Constraint::Length(1), // footer
         ])
         .split(size);
@@ -28,9 +30,7 @@ pub fn render_chrome(frame: &mut Frame, state: &AppState) -> AppLayout {
     render_tabs(frame, chunks[1], state);
     render_footer(frame, chunks[3], state);
 
-    AppLayout {
-        content: chunks[2],
-    }
+    AppLayout { content: chunks[2] }
 }
 
 fn render_header(frame: &mut Frame, area: Rect, state: &AppState) {
@@ -123,8 +123,38 @@ pub fn render_footer(frame: &mut Frame, area: Rect, state: &AppState) {
         Span::styled(" Quit", Style::default().fg(Color::Gray)),
     ];
 
+    // Cohort grouping hint when metadata is loaded. Insert before the trailing
+    // "?  Help  q Quit" cluster (last 4 spans).
+    if state.active_tab == ActiveTab::Cohort
+        && state
+            .metadata
+            .as_ref()
+            .is_some_and(|m| !m.dimensions.is_empty())
+    {
+        let insert_at = spans.len() - 4;
+        spans.insert(
+            insert_at,
+            Span::styled(COHORT_GROUP_HINT, Style::default().fg(Color::Gray)),
+        );
+        spans.insert(insert_at, Span::styled("g", Style::default().fg(Color::Cyan)));
+        if let Some(dim) = &state.active_group_dim {
+            spans.push(Span::styled(
+                "  [group: ",
+                Style::default().fg(Color::DarkGray),
+            ));
+            spans.push(Span::styled(
+                dim.clone(),
+                Style::default().fg(Color::Magenta),
+            ));
+            spans.push(Span::styled("]", Style::default().fg(Color::DarkGray)));
+        }
+    }
+
     if !state.search_confirmed.is_empty() {
-        spans.push(Span::styled("  [filter: ", Style::default().fg(Color::DarkGray)));
+        spans.push(Span::styled(
+            "  [filter: ",
+            Style::default().fg(Color::DarkGray),
+        ));
         spans.push(Span::styled(
             &state.search_confirmed,
             Style::default().fg(Color::Yellow),

@@ -103,11 +103,7 @@ pub fn parse_bcftools_stats(path: &Path, content: &str) -> Result<BcftoolsStats>
 }
 
 fn build_summary(raw: BTreeMap<String, String>) -> BcftoolsSummary {
-    let get_u64 = |key: &str| -> u64 {
-        raw.get(key)
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(0)
-    };
+    let get_u64 = |key: &str| -> u64 { raw.get(key).and_then(|v| v.parse().ok()).unwrap_or(0) };
 
     BcftoolsSummary {
         num_samples: get_u64("number of samples"),
