@@ -8,8 +8,9 @@ Built with Rust using [ratatui](https://github.com/ratatui/ratatui) + [crossterm
 
 - **Auto-detection** — Scans directories recursively and automatically identifies QC output files
 - **Auto-generation** — Runs `samtools stats`, `bcftools stats`, and `fastqc` directly from BAM/VCF/FASTQ files (`--generate`)
-- **5 interactive tabs** — Summary (MultiQC-style), Overview dashboard, samtools stats, bcftools stats, FastQC
+- **6 interactive tabs** — Summary (MultiQC-style), Overview dashboard, samtools stats, bcftools stats, FastQC, Cohort (IQR-based outlier detection)
 - **QC thresholds** — Built-in quality thresholds with color-coded cells (green/yellow/red), customizable via TOML config
+- **Cohort outlier detection** — Cohort-relative IQR (Tukey fences) flags samples that deviate from the rest of the batch, orthogonal to absolute QC thresholds
 - **CI/CD integration** — `--strict` flag exits with code 1 if any sample fails QC thresholds
 - **Visual metrics** — Gauges for mapping/duplication rates, inline bar charts for substitution types and indel distributions, colored PASS/WARN/FAIL indicators
 - **JSON export** — Export all parsed QC data as JSON for downstream analysis (`--export-json`)
@@ -135,6 +136,9 @@ Variant summary table, Ts/Tv statistics, substitution type distribution with inl
 
 ### FastQC
 Basic statistics, module status list with colored PASS/WARN/FAIL indicators, and per-base quality bar chart with mean quality color coding.
+
+### Cohort
+Cohort-relative outlier detection across the loaded batch. For each of 5 metrics (Mapping %, Dup %, Error rate, Ts/Tv, GC dev), an ASCII boxplot draws the cohort distribution (Q1, median, Q3, Tukey fences); samples beyond the fences are flagged. Samples that *also* fail an absolute QC threshold render in red, the rest in yellow — making cohort drift and absolute breakage visible as separate signals. Below the boxplots, a sorted outlier list ranks samples by deviation magnitude. Requires ≥5 samples per metric to compute IQR; otherwise a per-row "n=N — too small" hint is shown.
 
 ## Project Structure
 

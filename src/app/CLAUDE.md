@@ -27,7 +27,7 @@ ui::draw(frame, &app_state)
 - `loading: bool` — true while files are loading (splash screen is shown)
 - `error_message: Option<String>` — error message
 - `qc_results: Option<QcResults>` — parsed data
-- Per-tab selection indices: `samtools_selected`, `bcftools_selected`, `fastqc_selected`
+- Per-tab selection indices: `samtools_selected`, `bcftools_selected`, `fastqc_selected`, `cohort_selected`
 - `scroll_offset: u16`
 - `sort_column: SortColumn` — active sort column in the Overview table (File/Tool/Summary/Status)
 - `sort_ascending: bool` — sort direction
@@ -55,11 +55,13 @@ ui::draw(frame, &app_state)
 - `Samtools` — samtools stats detail view
 - `Bcftools` — bcftools stats detail view
 - `Fastqc` — FastQC detail view
+- `Cohort` — cohort-relative outlier detection (IQR boxplot + outlier table)
 
 ### `mod.rs` — App update logic
 - State updates via `update(action: Action)`
 - NextFile/PrevFile updates the relevant selection index based on active tab
 - NextFile/PrevFile is a no-op on the Overview tab
+- NextFile/PrevFile in Cohort tab uses saturating add/sub on `cohort_selected`; the actual upper bound is clamped at render time against the live outlier-list length
 - Search actions use `set_search_active()` to update both local state and `Arc<AtomicBool>`
 - CycleSortColumn is context-aware: `summary_sort_column.next()` in Summary tab, `sort_column.next()` in others
 - ScrollLeft/ScrollRight only updates `summary_horizontal_offset` in the Summary tab

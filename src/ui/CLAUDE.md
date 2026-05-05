@@ -1,6 +1,6 @@
 # UI Module
 
-Terminal render layer using ratatui. 5 tabs, splash screen, help overlay, loading/error states.
+Terminal render layer using ratatui. 6 tabs, splash screen, help overlay, loading/error states.
 
 ## Structure
 
@@ -12,7 +12,9 @@ ui/
 │   ├── overview.rs   # Aggregate QC dashboard (file list, aggregate stats, gauges)
 │   ├── samtools.rs   # samtools stats detail: summary table + mapping/dup/paired gauges
 │   ├── bcftools.rs   # bcftools stats detail: summary + Ts/Tv + substitution types + indel distribution
-│   └── fastqc.rs     # FastQC detail: basic stats + module status (pass/warn/fail) + per-base quality chart
+│   ├── fastqc.rs     # FastQC detail: basic stats + module status (pass/warn/fail) + per-base quality chart
+│   ├── summary.rs    # MultiQC-style wide table (sortable, threshold-colored, horizontal scroll)
+│   └── cohort.rs     # Cohort-relative outlier detection (IQR boxplots + outlier list)
 └── widgets/
     ├── gauge.rs  # Quality color calculation (mapping_style, duplication_style)
     └── table.rs  # Styled table helpers (header_style, highlight_style)
@@ -27,6 +29,17 @@ ui/
 | samtools | Summary Numbers table + Mapping/Duplication/Properly Paired gauges |
 | bcftools | Summary + Ts/Tv + Substitution Types (inline bar, Ts=cyan Tv=magenta) + InDel Distribution (del=red ins=green) |
 | FastQC | Basic Statistics + Module Status (colored PASS/WARN/FAIL) + Per Base Quality (bar chart) |
+| Cohort | 5 ASCII boxplots (Mapping %, Dup %, Error rate, Ts/Tv, GC dev) + outlier list ranked by |Δ| |
+
+## Cohort Tab
+
+- Renders a 5-row ASCII boxplot panel (top, fixed 9-line block) and an outlier table (bottom, fills remainder).
+- For each metric, computes `Q1`, median, `Q3` via linear-interpolation quartiles (numpy default, "Type 7"), then Tukey fences `Q1 − 1.5·IQR` and `Q3 + 1.5·IQR`.
+- Per-cell axis characters: `─` whisker, `[`/`]` box edge, `█` box fill, `│` median, `o` cohort outlier (yellow), `●` cohort outlier *and* threshold-FAIL (red, bold).
+- Right of the axis: the most extreme outlier sample name + value (or `+N more` when several).
+- Below the box panel: a `Sample | Metric | Value | Fence | Δ | Side | Threshold` table sorted by `|Δ|` descending. `n/p` (or `↑/↓`) move `cohort_selected`; the row is clamped to the live outlier count at render time.
+- If no metric has ≥5 samples the entire tab shows a single warning paragraph; if only some metrics qualify, the others render a per-row "n=N — too small" hint.
+- Cohort detection is TUI-only — CSV/JSON export is unchanged.
 
 ## Color Scheme
 

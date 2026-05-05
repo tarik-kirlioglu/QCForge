@@ -32,7 +32,7 @@ cargo run -- --export-json qc.json --export-csv qc.csv <DIR>  # Both at once
 cargo run -- -g --export-json qc.json <DIR> # Generate + JSON export
 cargo run -- --thresholds custom.toml <DIR>  # Custom threshold config
 cargo run -- --strict --export-csv out.csv <DIR>  # Strict mode (exit 1 on FAIL)
-cargo test                           # Run all tests (36 tests)
+cargo test                           # Run all tests (41 tests)
 cargo clippy                         # Lint check
 cargo fmt                            # Code formatting
 ```
@@ -51,8 +51,8 @@ src/
 ├── generator/     # BAM/VCF/FASTQ → stats file generation (runs samtools/bcftools/fastqc)
 ├── parser/        # File parsers (samtools, bcftools, fastqc)
 ├── scanner/       # Directory scanning, file type detection (stats + BAM/VCF/FASTQ)
-└── ui/            # ratatui render layer (5 tabs + widgets)
-    ├── tabs/      # Summary (threshold-colored), Overview (sortable + filterable), samtools, bcftools, FastQC
+└── ui/            # ratatui render layer (6 tabs + widgets)
+    ├── tabs/      # Summary, Overview, samtools, bcftools, FastQC, Cohort (IQR boxplot + outlier list)
     └── widgets/   # gauge, table helpers
 ```
 
@@ -76,7 +76,7 @@ src/
 - **Naming:** Rust standard snake_case. Struct names PascalCase. Module names snake_case.
 - **Imports:** Internal imports via `use crate::`. Wildcard imports (`use x::*`) are forbidden; use explicit imports.
 - **Clippy:** `cargo clippy` must pass with no warnings. `#[allow(...)]` only with a justification comment.
-- **Tests:** Each parser module must contain its own unit tests (`#[cfg(test)] mod tests`). Test data as inline strings. Currently 36 tests (18 parser + 4 export + 11 threshold + 3 summary).
+- **Tests:** Each parser module must contain its own unit tests (`#[cfg(test)] mod tests`). Test data as inline strings. Currently 41 tests (18 parser + 4 export + 11 threshold + 3 summary + 5 cohort).
 - **Async:** File I/O runs in background via tokio::spawn. FastQC zip processing uses spawn_blocking. The TUI event loop must never block.
 - **Terminal restore:** Terminal state must be restored even on panic (use panic hook).
 
@@ -103,3 +103,4 @@ src/
 - GC% threshold is implemented as `gc_deviation`: `abs(gc - 50.0)` is computed and evaluated with LowerIsBetter.
 - `--strict` mode evaluates all samples via `check_qc_failures()` after export; exits with code 1 if any FAIL.
 - CSV export adds a `qc_status` column when thresholds are provided (`#[serde(skip_serializing_if = "Option::is_none")]`).
+- Cohort tab applies cohort-relative outlier detection across the loaded samples for 5 metrics (Mapping %, Dup %, Error rate, Ts/Tv, GC dev). Outliers are flagged via Tukey IQR fences (`Q1 − 1.5·IQR`, `Q3 + 1.5·IQR`) using linear-interpolation quartiles (numpy default, "Type 7"). The mutual `ThresholdConfig` is shown as an orthogonal signal: cohort outliers without absolute-FAIL render in yellow (`o`), cohort outliers that *also* fail an absolute threshold render in red (`●`). Each metric needs ≥5 samples to render a boxplot; otherwise a per-row "n=N — too small" hint is shown. If no metric qualifies, the whole tab shows a single warning message. Cohort detection is TUI-only — CSV/JSON exports are unchanged.

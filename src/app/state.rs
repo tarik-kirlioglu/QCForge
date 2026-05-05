@@ -97,6 +97,7 @@ pub enum ActiveTab {
     Samtools,
     Bcftools,
     Fastqc,
+    Cohort,
 }
 
 impl ActiveTab {
@@ -107,6 +108,7 @@ impl ActiveTab {
             ActiveTab::Samtools => "samtools",
             ActiveTab::Bcftools => "bcftools",
             ActiveTab::Fastqc => "FastQC",
+            ActiveTab::Cohort => "Cohort",
         }
     }
 
@@ -117,6 +119,7 @@ impl ActiveTab {
             ActiveTab::Samtools,
             ActiveTab::Bcftools,
             ActiveTab::Fastqc,
+            ActiveTab::Cohort,
         ]
     }
 }
@@ -142,6 +145,7 @@ pub struct AppState {
     pub summary_sort_column: SummarySortColumn,
     pub summary_horizontal_offset: u16,
     pub summary_selected: usize,
+    pub cohort_selected: usize,
     pub thresholds: ThresholdConfig,
     pub splash_tick: u16,
     pub splash_done: bool,
@@ -171,6 +175,7 @@ impl AppState {
             summary_sort_column: SummarySortColumn::File,
             summary_horizontal_offset: 0,
             summary_selected: 0,
+            cohort_selected: 0,
             splash_tick: 0,
             splash_done: false,
             splash_status: "Loading QC data".to_string(),

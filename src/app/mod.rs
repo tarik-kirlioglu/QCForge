@@ -62,6 +62,9 @@ impl AppState {
                             let max = results.fastqc_reports.len().saturating_sub(1);
                             self.fastqc_selected = (self.fastqc_selected + 1).min(max);
                         }
+                        ActiveTab::Cohort => {
+                            self.cohort_selected = self.cohort_selected.saturating_add(1);
+                        }
                         ActiveTab::Overview => {}
                     }
                     self.scroll_offset = 0;
@@ -80,6 +83,9 @@ impl AppState {
                     }
                     ActiveTab::Fastqc => {
                         self.fastqc_selected = self.fastqc_selected.saturating_sub(1);
+                    }
+                    ActiveTab::Cohort => {
+                        self.cohort_selected = self.cohort_selected.saturating_sub(1);
                     }
                     ActiveTab::Overview => {}
                 }

@@ -33,6 +33,7 @@ pub fn draw(frame: &mut Frame, state: &AppState) {
         ActiveTab::Samtools => tabs::samtools::render(frame, app_layout.content, state),
         ActiveTab::Bcftools => tabs::bcftools::render(frame, app_layout.content, state),
         ActiveTab::Fastqc => tabs::fastqc::render(frame, app_layout.content, state),
+        ActiveTab::Cohort => tabs::cohort::render(frame, app_layout.content, state),
     }
 
     // Help overlay
@@ -114,7 +115,7 @@ fn render_splash(frame: &mut Frame, tick: u16, status: &str) {
 
             // Two sine waves offset by pi — same as the original double helix
             let phase1 = ((col as f32 + seed as f32 * 1.5) * 0.15).sin();
-            let phase2 = ((col as f32 + seed as f32 * 1.5 + 3.14) * 0.15).sin();
+            let phase2 = ((col as f32 + seed as f32 * 1.5 + std::f32::consts::PI) * 0.15).sin();
             let wave1_row = (hf / 2.0 + phase1 * (hf * 0.3)) as usize;
             let wave2_row = (hf / 2.0 + phase2 * (hf * 0.3)) as usize;
 
