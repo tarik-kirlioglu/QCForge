@@ -28,6 +28,7 @@ cargo run -- -g --output-dir ./out/ <DIR>  # Write stats to a different director
 cargo run -- --export-json qc.json <DIR>   # JSON export (no TUI)
 cargo run -- --export-csv qc.csv <DIR>     # CSV export (no TUI)
 cargo run -- --export-csv qc.tsv <DIR>     # TSV export (.tsv extension = tab-delimited)
+cargo run -- --export-html qc.html <DIR>   # Self-contained static HTML report (no TUI)
 cargo run -- --export-json qc.json --export-csv qc.csv <DIR>  # Both at once
 cargo run -- -g --export-json qc.json <DIR> # Generate + JSON export
 cargo run -- --thresholds custom.toml <DIR>  # Custom threshold config
@@ -46,6 +47,7 @@ src/
 ├── cli.rs         # CLI arguments via clap derive
 ├── error.rs       # QcForgeError enum (thiserror)
 ├── export.rs      # CSV/TSV export (QcRow flat struct, serde serialize, threshold-aware qc_status)
+├── html_export.rs # Static HTML report (Summary + Cohort SVG boxplots + per-tool detail; no JS)
 ├── threshold.rs   # QC threshold engine (MetricThreshold, ThresholdConfig, TOML config)
 ├── app/           # Application state machine (Action pattern)
 ├── event/         # crossterm event handling (async EventStream, Arc<AtomicBool> search state)
@@ -67,6 +69,7 @@ src/
 | `--output-dir` | | Output directory for generated stats files |
 | `--export-json` | | JSON export (TUI does not open) |
 | `--export-csv` | | CSV/TSV export (TUI does not open, .tsv extension = tab-delimited) |
+| `--export-html` | | Self-contained static HTML report (TUI does not open, embedded CSS + inline SVG, no JS) |
 | `--thresholds` | | QC threshold config file (TOML format, default: built-in thresholds) |
 | `--strict` | | Exit with code 1 if any FAIL (for CI/CD integration) |
 | `--metadata` | | Sample metadata TSV (sample_id + arbitrary annotation columns become Cohort grouping dimensions) |
@@ -79,7 +82,7 @@ src/
 - **Naming:** Rust standard snake_case. Struct names PascalCase. Module names snake_case.
 - **Imports:** Internal imports via `use crate::`. Wildcard imports (`use x::*`) are forbidden; use explicit imports.
 - **Clippy:** `cargo clippy` must pass with no warnings. `#[allow(...)]` only with a justification comment.
-- **Tests:** Each parser module must contain its own unit tests (`#[cfg(test)] mod tests`). Test data as inline strings. Currently 48 tests (18 parser + 4 export + 11 threshold + 3 summary + 7 cohort + 5 metadata).
+- **Tests:** Each parser module must contain its own unit tests (`#[cfg(test)] mod tests`). Test data as inline strings. Currently 52 tests (18 parser + 4 export + 11 threshold + 3 summary + 7 cohort + 5 metadata + 4 html_export).
 - **Async:** File I/O runs in background via tokio::spawn. FastQC zip processing uses spawn_blocking. The TUI event loop must never block.
 - **Terminal restore:** Terminal state must be restored even on panic (use panic hook).
 
@@ -108,3 +111,4 @@ src/
 - CSV export adds a `qc_status` column when thresholds are provided (`#[serde(skip_serializing_if = "Option::is_none")]`).
 - Cohort tab applies cohort-relative outlier detection across the loaded samples for 5 metrics (Mapping %, Dup %, Error rate, Ts/Tv, GC dev). Outliers are flagged via Tukey IQR fences (`Q1 − 1.5·IQR`, `Q3 + 1.5·IQR`) using linear-interpolation quartiles (numpy default, "Type 7"). The mutual `ThresholdConfig` is shown as an orthogonal signal: cohort outliers without absolute-FAIL render in yellow (`o`), cohort outliers that *also* fail an absolute threshold render in red (`●`). Each metric needs ≥5 samples to render a boxplot; otherwise a per-row "n=N — too small" hint is shown. If no metric qualifies, the whole tab shows a single warning message. Cohort detection is TUI-only — CSV/JSON exports are unchanged.
 - `--metadata <FILE>` loads a TSV with a required `sample_id` column plus arbitrary annotation columns (each becomes a grouping dimension). The `g` key cycles through dimensions; per-dimension IQR is computed on partitioned subsets so heterogeneous cohorts (WES + WGS + CES, tumor + normal) don't pollute each other's outlier flags. Sample-to-row matching strips known suffixes (`_fastqc.zip`, `.vcf.stats`, `.stats`, single trailing extension). Samples missing from the metadata fall into the `Ungrouped` bucket. With grouping active, the Cohort layout switches to 50/50 (boxplots top, outlier list bottom) and the boxplot panel scrolls vertically with `j/k`; the outlier list uses TableState selection driven by `n/p`. Outlier list gains a `Group` column. `derive_sample_id` lives in `src/metadata.rs` and is the single source of truth for matching.
+- `--export-html <FILE>` writes a single self-contained static HTML report. No external assets, no JavaScript — embedded CSS (light + dark via `prefers-color-scheme`) and inline SVG charts (Cohort boxplots use the same IQR math as the TUI but render as `<rect>`/`<line>`/`<circle>` for vector-perfect zoom). The report mirrors the TUI: Summary table with threshold-colored cells, Cohort outlier analysis with per-metric/per-group boxplots, then per-tool collapsible detail (`<details>`) sections. When `--metadata` is passed alongside, the HTML defaults to grouping by the first dimension (TUI keeps None as default; the export needs a single shot). `cohort::CohortRow`, `build_cohort_rows`, and `collect_all_outliers` are intentionally `pub` for cross-module reuse from `html_export.rs`.

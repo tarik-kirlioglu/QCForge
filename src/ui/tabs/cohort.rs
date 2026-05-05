@@ -273,14 +273,14 @@ fn file_label(path: &std::path::Path) -> String {
 
 /// One row in the boxplot panel — a metric optionally scoped to a group.
 #[derive(Debug, Clone)]
-struct CohortRow {
-    metric: CohortMetric,
-    group_label: Option<String>,
-    points: Vec<CohortDataPoint>,
-    stats: Option<BoxStats>,
+pub struct CohortRow {
+    pub metric: CohortMetric,
+    pub group_label: Option<String>,
+    pub points: Vec<CohortDataPoint>,
+    pub stats: Option<BoxStats>,
 }
 
-fn build_cohort_rows(
+pub fn build_cohort_rows(
     cohort: &[(CohortMetric, Vec<CohortDataPoint>)],
     metadata: Option<&SampleMetadata>,
     active_dim: Option<&str>,
@@ -315,7 +315,7 @@ fn build_cohort_rows(
     rows
 }
 
-fn collect_all_outliers(rows: &[CohortRow]) -> Vec<Outlier> {
+pub fn collect_all_outliers(rows: &[CohortRow]) -> Vec<Outlier> {
     let mut all = Vec::new();
     for row in rows {
         if let Some(stats) = &row.stats {

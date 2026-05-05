@@ -136,7 +136,10 @@ pub fn render_footer(frame: &mut Frame, area: Rect, state: &AppState) {
             insert_at,
             Span::styled(COHORT_GROUP_HINT, Style::default().fg(Color::Gray)),
         );
-        spans.insert(insert_at, Span::styled("g", Style::default().fg(Color::Cyan)));
+        spans.insert(
+            insert_at,
+            Span::styled("g", Style::default().fg(Color::Cyan)),
+        );
         if let Some(dim) = &state.active_group_dim {
             spans.push(Span::styled(
                 "  [group: ",

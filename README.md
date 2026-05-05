@@ -16,6 +16,7 @@ Built with Rust using [ratatui](https://github.com/ratatui/ratatui) + [crossterm
 - **Visual metrics** — Gauges for mapping/duplication rates, inline bar charts for substitution types and indel distributions, colored PASS/WARN/FAIL indicators
 - **JSON export** — Export all parsed QC data as JSON for downstream analysis (`--export-json`)
 - **CSV/TSV export** — Export flat summary table as CSV or TSV (`--export-csv`, auto-detects `.tsv` for tab-delimited)
+- **HTML report** — Self-contained static HTML (`--export-html`) with embedded CSS, inline SVG cohort boxplots, threshold-colored summary table, and per-tool collapsible detail. No JavaScript, no CDN — open offline, share over email/Slack
 - **Sortable overview** — Sort the file list by any column with `s`/`S` keys
 - **Search & filter** — Filter files by name with `/` key, real-time filtering as you type
 - **Animated splash screen** — ASCII logo with fade-in effect and spark particle animation during loading
@@ -60,6 +61,12 @@ qcforge --export-json results.json /path/to/qc_outputs/
 # Export QC summary as CSV or TSV (no TUI)
 qcforge --export-csv summary.csv /path/to/qc_outputs/
 qcforge --export-csv summary.tsv /path/to/qc_outputs/
+
+# Export self-contained static HTML report (no TUI; share via email/Slack)
+qcforge --export-html report.html /path/to/qc_outputs/
+
+# HTML + metadata grouping (per-panel boxplots in the report)
+qcforge --metadata samples.tsv --export-html report.html /path/to/qc_outputs/
 
 # Export both JSON and CSV at once
 qcforge --export-json results.json --export-csv summary.csv /path/to/data/
@@ -114,6 +121,7 @@ Options:
       --output-dir <DIR>   Output directory for generated stats files
       --export-json <FILE> Export parsed QC data as JSON and exit
       --export-csv <FILE>  Export QC summary as CSV/TSV and exit (.tsv = tab-delimited)
+      --export-html <FILE> Export self-contained static HTML report and exit
       --thresholds <FILE>  QC threshold config file (TOML format)
       --strict             Exit with code 1 if any sample fails QC thresholds
       --metadata <FILE>    Sample metadata TSV (sample_id + annotation columns) for Cohort grouping
@@ -169,6 +177,7 @@ src/
 ├── cli.rs          # CLI argument definitions (clap)
 ├── error.rs        # Custom error types (thiserror)
 ├── export.rs       # CSV/TSV export module
+├── html_export.rs  # Static HTML report (Summary + Cohort SVG + per-tool detail; no JS)
 ├── threshold.rs    # QC threshold engine
 ├── metadata.rs     # Sample metadata TSV reader + derive_sample_id (cohort grouping)
 ├── app/            # State machine (Action pattern)

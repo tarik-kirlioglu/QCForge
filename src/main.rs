@@ -4,6 +4,7 @@ mod error;
 mod event;
 mod export;
 mod generator;
+mod html_export;
 mod metadata;
 mod parser;
 mod scanner;
@@ -50,7 +51,7 @@ async fn main() -> Result<()> {
     };
 
     // Export mode: no TUI, just parse and dump (generate runs synchronously here)
-    if cli.export_json.is_some() || cli.export_csv.is_some() {
+    if cli.export_json.is_some() || cli.export_csv.is_some() || cli.export_html.is_some() {
         if cli.generate {
             eprintln!("Scanning for BAM/VCF/FASTQ files...");
             let raw_files = scanner::scan_raw_files(&cli.input_dir, cli.max_depth)?;
@@ -83,6 +84,23 @@ async fn main() -> Result<()> {
         if let Some(ref csv_path) = cli.export_csv {
             export::write_csv(csv_path, &results, Some(&thresholds))?;
             eprintln!("QC summary exported to {}", csv_path.display());
+        }
+
+        if let Some(ref html_path) = cli.export_html {
+            // In export mode, default to the first metadata dimension (if any) so
+            // grouping shows up without requiring an extra CLI flag. The TUI keeps
+            // its own None default since the user can press `g` interactively.
+            let active_dim = metadata
+                .as_ref()
+                .and_then(|m| m.dimensions.first().map(|s| s.as_str()));
+            html_export::write_html(
+                html_path,
+                &results,
+                &thresholds,
+                metadata.as_ref(),
+                active_dim,
+            )?;
+            eprintln!("QC report exported to {}", html_path.display());
         }
 
         if cli.strict {

@@ -26,6 +26,11 @@ pub struct Cli {
     #[arg(long, value_name = "FILE")]
     pub export_csv: Option<PathBuf>,
 
+    /// Export self-contained static HTML report and exit (no TUI).
+    /// Combinable with --export-json/--export-csv.
+    #[arg(long, value_name = "FILE")]
+    pub export_html: Option<PathBuf>,
+
     /// Auto-generate stats from BAM/VCF files using samtools/bcftools
     #[arg(short, long)]
     pub generate: bool,
